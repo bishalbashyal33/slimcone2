@@ -1,0 +1,72 @@
+\documentclass{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+\usepackage{pgfplots}
+\usepackage{import}
+
+\subimport{../}{pgfplotstyles}
+
+\begin{document}
+
+\pgfplotsset{
+  log x ticks with fixed point/.style={
+      xticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  },
+  log y ticks with fixed point/.style={
+      yticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  }
+}
+\begin{tikzpicture}[thick, font=\fontsize{18}{20}\selectfont]
+  \begin{axis}[
+      grid=major,
+      xtick=data,
+      legend style={
+        column sep=2mm,
+        font=\fontsize{12}{14}\selectfont,
+        at={(0.38,1.05)},
+        anchor=south},
+      xmode=log,
+      log x ticks with fixed point,
+      ymode=log,
+      log basis y={10},
+      ymin=0.1,
+      ymax=100000.0,
+      legend columns=3,
+      xlabel={document size [MB]},
+      ylabel={runtime [ms]},
+    ]
+    \addplot[tasmline] table [x=T, y expr=\thisrow{TASM}*1.0, col sep=semicolon]{../../../csv/fig14_ab/timingfiltering-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Tasm}};
+
+    \addplot[slimtline] table [x=T, y expr=\thisrow{SLIMT}*1.0, col sep=semicolon]{../../../csv/fig14_ab/timingfiltering-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Slim-NoIndex}};
+
+    \addplot[structline] table [x=T, y expr=\thisrow{STRUCT}*1.0, col sep=semicolon]{../../../csv/fig14_ab/timingfiltering-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Struct}};
+
+    \addplot[slimline] table [x=T, y expr=\thisrow{SLIM}*1.0, col sep=semicolon]{../../../csv/fig14_ab/timingfiltering-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Slim}};
+
+    \addplot[slimuline] table [x=T, y expr=\thisrow{SLIMU}*1.0, col sep=semicolon]{../../../csv/fig14_ab/timingfiltering-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Slim-Dyn}};
+
+    % Add empty legend to fix the legend layout.
+    \addlegendimage{empty legend}
+    \addlegendentry{}
+  \end{axis}
+\end{tikzpicture}
+
+\end{document}

@@ -1,0 +1,143 @@
+% !TEX root = kocher-topk-indexing.tex
+
+We introduce the \emph{candidate index}, which enables us to efficiently retrieve candidates in score order, and propose \lowerboundmerge{}, a baseline algorithm that solves \tssqs{} using our index.
+
+\subsection{Candidate Index}
+\label{subsec:baseline-index-structure}
+
+The candidate  index, $\Index{}$, is built over a document tree, $T$, and stores the following data structures:
+\begin{enumerate}
+  \item An \emph{inverted list index} over the document labels.
+  \item The \emph{node index}, a compact representation of $T$.
+\end{enumerate}
+
+\noindent Our index supports the following operations:
+\parskip0pt\begin{itemize}
+  \item $\Indexlist{\lambda}$ retrieves the inverted list $l_\lambda$ for a label $\lambda$ and returns \emph{nil} if that list does not exist.
+  \item $\Indexsizes{}$ retrieves all distinct subtree sizes in $T$.
+\end{itemize}
+
+\paragraph{Inverted List Index}
+
+We build an inverted list index on the document labels. For each \emph{distinct} label $\lambda \in \LabelMultiset{T}$, we maintain a list $l_\lambda$ of all subtrees that contain a node labeled $\lambda$. The inverted list entries are lexicographically sorted by subtree size and postorder identifier (ascending order). \figref{inverted-list-index-materialized-example} shows the inverted lists for our example document. A list entry is a subtree $T_i$, represented by the postorder identifier of its root node, $i$. The lists are partitioned by subtree sizes (shown above the lists).
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[b]{0.475\textwidth}
+    \centering
+    %\includestandalone{figs/inverted-list-index-materialized-example}
+    \includegraphics[width=\textwidth]{figs/inverted-list-index-materialized-example}
+    \caption{Inverted list index of $T$.}
+    \label{fig:inverted-list-index-materialized-example}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.475\textwidth}
+    \centering
+    %\includestandalone{figs/node-index-example}
+    \includegraphics[width=\textwidth]{figs/node-index-example}
+    \caption{Node index of $T$.}
+    \label{fig:node-index-example}
+  \end{subfigure}
+  \caption{Baseline index structure for document $T$ of our running example (cf. \figref{running-example}).}
+  \label{fig:baseline-index-structure}
+\end{figure}
+
+\paragraph{Node Index}
+
+We store the document $T$ in an array of size $|T|$. The $i$-th field in the array (1-based counting) is a pair $(\lambda_i, |T_i|)$, where $\lambda_i$ is the label of the $i$-th node of $T$ in postorder and $|T_i|$ is the size of the subtree rooted in that node. \figref{node-index-example} shows the node index for our example document.
+
+The node index is a lossless and compact representation of the document tree. We do not need any other representation of the document for our algorithms.
+Conveniently, each subtree $T_i$ in the node index is a connected subsequence starting at position $i - \sizeOf{T_i} + 1$ ($\sizeOf{T_i}$ is accessed in constant time in the node index) and ending at position $i$. The subtree part of the node index is a valid tree representation by itself.
+
+The node index is built in a single scan of the document using a SAX parser and is stored in main memory. While parsing, we build a dictionary that maps string labels to unique integers. In our indexes and algorithms (including the edit distance computation), we use integer labels (in our examples, however, we show the original string labels).
+
+\paragraph{Index Size}
+
+The size of the candidate index is $\BigOOf{n^2}$, $n=|T|$. Consider the tree in \figref{inverted-list-materialized-worst-case} with root label $\lambda_1$, a single leaf $\lambda_n$, and pairwise distinct labels, $\lambda_i\neq \lambda_j$ unless $i= j$. The inverted list of $\lambda_i$ has $i$ entries, e.g., $\lambda_n$ appears in $n$ subtrees. The overall number of entries is $\sum_{i=1}^{n}i$, which is quadratic.
+
+For the tree in \figref{inverted-list-materialized-worst-case}, also the index
+of  StructureSearch~\cite{cohen-sigmod-2013} requires quadratic space. We
+introduce a linear-space index in
+Section~\ref{sec:a-memory-efficient-approach}.
+
+\begin{figure}[ht!]
+  \centering
+  % \includestandalone{figs/inverted-list-materialized-worst-case}
+  \includegraphics[width=0.475\textwidth]{figs/inverted-list-materialized-worst-case}
+  \caption{Worst-case document for the inverted list index (root to the left, leaf to the right).}
+  \label{fig:inverted-list-materialized-worst-case}
+\end{figure}
+
+\subsection{\lowerboundmerge{} Algorithm}
+\label{subsec:baseline-algorithms}
+
+\lowerboundmerge{} uses the candidate index and processes the subtrees $T_i$ in  the order of non-decreasing size lower bound, $slb(T_i,Q)=||T_i|-|Q||$ (cf.\
+Section~\ref{sec:background-notations}), w.r.t.\ the query $Q$.
+
+We (conceptually) split the inverted lists into vertical \emph{stripes} as illustrated in \figref{baseline-inverted-list-index-2d-grid}. A stripe $S_j$ consists of all subtrees $T_i$ in all lists that have size $|T_i|=|Q|+j$, e.g., $S_2$ and $S_{-2}$ are the blue stripes in the figure. A \emph{partition} consists of all subtrees of a stripe in a single inverted list, e.g., the subtrees in stripe $S_0$ of list $l_{\lambda_4}$ form a partition (marked in the figure). Stripes and partitions may be empty.
+
+\begin{figure}[ht!]
+  \centering
+  %\scalebox{0.95}{\includestandalone{figs/baseline-inverted-list-index-2d-grid}}
+  \includegraphics[width=0.475\textwidth]{figs/baseline-inverted-list-index-2d-grid}
+  \caption{Stripes and partitions w.r.t.\ query $Q$.}
+  \label{fig:baseline-inverted-list-index-2d-grid}
+\end{figure}
+
+\paragraph{Overview}
+
+\lowerboundmerge{} processes the subtrees stripe by stripe.  The current stripe number is $j$. We leverage the fact that the size lower bound for all subtrees $T_i$ in $S_j$ and $S_{-j}$ is $\SLBshort{T_i}{Q} = j$. By incrementing the stripe number we process the subtrees in ascending size lower bound order.
+
+The goal, however, is to retrieve the subtrees in non-increasing candidate score order, which is equivalent to the non-decreasing label lower bound order. We maintain a \emph{lower bound cache} ($lbc$) that stores subtrees in buckets. A subtree $T_i$ in stripe $S_j$ or $S_{-j}$  with label lower bound $lb = \LLBshort{Q}{T_i}$ is cached in bucket $lbc\at{lb}$ for later verification if $lb > j$.
+
+We only process lists of labels that exist in $Q$, $\lambda \in \LabelMultiset{Q}$, therefore we have at most $\sizeOf{Q}$ lists. We start at stripe $j = 0$ and proceed in four steps:
+
+\begin{enumerate}
+  \item\label{enum:merge-step2} Verify all subtrees in lower bound bucket $lbc\at{j}$.
+  \item For each candidate $T_i \in S_j \cup S_{-j}$ compute $lb = \LLBshort{Q}{T_i}$.
+  \begin{enumerate}
+    \item If $lb = j$, then verify $T_i$;
+    \item otherwise, cache $T_i$ in lower bound bucket $lbc\at{lb}$.
+  \end{enumerate}
+  \item \label{enum:emptystripe} Increment to next stripe: $j \gets j + 1$
+  \item Continue at step (\ref{enum:merge-step2}).
+\end{enumerate}
+
+Whenever we verify a subtree $T_i$, we also update the ranking $R$. Since the current stripe number $j$ is a size lower bound for all subtrees in $S_j$, we  can terminate if $\sizeOf{R} = k$ and $j \geq \TEDRshort{R\at{k}}$.
+We give the pseudo code for \lowerboundmerge{} in the appendix (\algoref{lowerboundmergetopk}).
+
+\emph{Overlap computation.} We maintain two pointers, $\ptrup$ and $\ptrdown$, in each list. $\ptrdown$ is initialized to the first subtree $T_i$ (subtree with the smallest postorder identifier) of stripe $S_0$, $\ptrup$ starts at position $\ptrdown - 1$. If not clear from the context, we refer to the pointers of a list $l_\lambda$ by $l_\lambda.\ptrup$ and $l_\lambda.\ptrdown$.
+
+We move the pointers in an $n$-way merge fashion to compute the label overlap with the query. We stop moving a pointer when it points to the next stripe. We first move the $\ptrup$ pointers and maintain a counter $ol\at{T_i}$ for each subtree $T_i$ that we encounter; then we move the $\ptrdown$ pointers in a similar way. After all pointers stop, the counter $ol\at{T_i}$ stores the overlap $\MultisetOverlapSize{Q}{T_i}$. This works because our index structure sorts elements within a stripe consistently. With the overlap, we compute the label lower bound, $\LLBshort{Q}{T_i} = \LLB{Q}{T_i} \leq \TED{Q}{T_i}$.%, which we need in our algorithm.
+
+We next discuss two special cases. (1) \emph{Duplicate query labels.} When the query $Q$ has duplicate labels, the list $l_{\lambda}$ is retrieved $x$ times
+if $Q$ has $x$ nodes with label $\lambda$. Then, for a subtree $T_i$ we get an overlap $ol\at{T_i} > \MultisetOverlapSize{Q}{T_i}$ if $T_i$ has fewer than $x$ nodes with label $\lambda$. The top-$k$ result is still correct, but $T_i$ may be processed too early w.r.t.\ to the candidate score order. To avoid this situation, we can collect all subtrees and compute their label overlap using our node index. In practice, the small violations of the candidate order have little effect, and we suggest using the merge approach.
+
+(2) \emph{Lists without query label.}  After processing all lists of the labels in $Q$, one of the following situations may happen. \newline (a) $\sizeOf{R} < k$, i.e., we did not find $k$ subtrees that have a common label with $Q$; (b) $\TEDRshort{R\at{k}} > \sizeOf{Q}$, i.e., there may be subtrees that do not share a label with $Q$ but should be in the ranking. In this case, we need to consider lists of labels that do not exist in $Q$. For all subtrees in lists of non-query labels the minimum edit distance is $\sizeOf{Q}$. We merge the lists stripe by stripe and use the stopping condition to terminate. This corner case rarely appears in practice.
+
+The following theorem considers \lowerboundmerge{} with the fix for duplicate query labels.
+
+\begin{restatable}{theorem}{theoremmergeallecorrectnessscoreorder}
+\lowerboundmerge{} solves the top-$k$ subtree similarity problem and verifies subtrees in candidate score order.
+\end{restatable}
+
+\begin{example}
+
+\figref{running-example-lower-bound-merge} illustrates \lowerboundmerge{} for our running example, $k = 3$. We retrieve the lists of the labels in $Q$: $a$, $b$ (twice since $b$ is a duplicate label), and $x$. We start with stripe $S_0$ (red stripe). Pointer $r$ is initialized to the first subtree in $S_0$ ($T_6$ in all lists), $l$ starts on the last subtree in the green partition.
+%
+We compute the overlap by moving the pointers and merging the lists. $l$ cannot be moved; $r$ merges the partitions in $S_0$ and computes the overlaps of $T_6$ (4), $T_{11}$ (4), and $T_{15}$ (2). Note that the true overlap of $T_{15}$ is 1; we overestimate due to the duplicate query label $b$. From the overlaps, we get the label lower bounds $\LLBshort{Q}{T_6} = \LLBshort{Q}{T_{11}} = 0$ and $\LLBshort{Q}{T_{15}} = 2$.
+%
+Hence, $T_6$ and $T_{11}$ are verified, whereas $T_{15}$ is cached in bucket $lbc[2]$; $R' = \left[ T_6, T_{11} \right]$. For the next stripe, $j = 1$, there is nothing to do since $lbc\at{1}$, $S_{1}$, and $S_{-1}$ are all empty.
+%
+For $j = 2$, we first verify $T_{15}$ in $lbc\at{2}$ and get the ranking $R' = \left[ T_6, T_{11}, T_{15} \right]$; next we process the subtrees in stripe $S_{-2}$ (green); $S_2$ is empty. The overlaps (2 for $T_{14}$, $T_9$, and 3 for $T_5$, $T_2$) are computed while $\ptrup{}$ is decremented. $T_{14}$, $T_9$ are verified immediately.
+%
+After $T_5$ is verified in the next round $j = 3$, $R = \left[ T_6, T_5, T_9 \right]$, and we terminate since $\TEDRshort{R\at{k}} \leq j$. \figref{running-example-lower-bound-merge} illustrates the pointers after processing $T_5$.
+
+\begin{figure}[ht!]
+  \centering
+  %\includestandalone{figs/running-example-lower-bound-merge}
+  \includegraphics[width=0.475\textwidth]{figs/running-example-lower-bound-merge}
+  \caption{\lowerboundmerge{} after processing stripes j = 2.}
+  \label{fig:running-example-lower-bound-merge}
+\end{figure}
+
+\end{example}

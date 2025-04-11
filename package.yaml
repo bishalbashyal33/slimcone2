@@ -1,0 +1,100 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 Daniel Kocher, Manuel Kocher
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+################################################################################
+############################### Argument Passing ###############################
+################################################################################
+#
+# Creates an archive that contains all required files to reproduce the
+# experimental results of our paper "A Scalable Index for Top-k Subtree
+# Similarity Queries".
+#
+# --extra-vars='{ "dest": "..." }'
+#
+# dest  should contain the full filepath (incl. the tar.gz extension) of where
+#       to store the created archive
+
+---
+- name: "Archive req. directorie/files (in clean state) into tar.gz file"
+  hosts: localhost
+  connection: local
+  vars:
+    - archive_name: "{{ dest | default('sigmod2019-repro.tar.gz') }}"
+    - archive_directories:
+      # algorithms
+      - slim
+      - tasm-struct
+      # paper
+      - paper
+      # python
+      - common
+    - archive_files:
+      # docs
+      - README.txt
+      # ansible
+      - build_code.yaml
+      - build_symlinks.yaml
+      - copy_result_files.yaml
+      - get_data.yaml
+      - run_experiments.yaml
+      - run_all.yaml
+      # python
+      - merge.py
+      - mystatistics.py
+      - profile.py
+      - profile-all.py
+      - replaceheader.py
+      - suffixcolumnorder.py
+      - report/report.pdf
+  tasks:
+    - name: "Compile report"
+      command: latexmk -pdf report.tex
+      args:
+        chdir: report/
+      register: report_compilation
+    - name: "Report compilation stdout"
+      debug:
+        var: report_compilation.stdout_lines
+    - name: "Report compilation stderr"
+      debug:
+        var: report_compilation.stdout_lines
+    - name: "Clean up paper directory"
+      make:
+        chdir: paper/
+        target: clean
+    # archive module is available for ansible version >= 2.3
+    - name: "Create archive {{ archive_name }}"
+      command: "tar
+        --exclude='common/__pycache__'
+        --exclude='*.pyc'
+        --exclude='slim/build'
+        --exclude='tasm-struct/build'
+        -czvf {{ archive_name }}
+        --transform 's,^,sigmod2019-reproducibility/,'
+        {{ archive_directories | join(' ') }}
+        {{ archive_files | join(' ') }}"
+      register: tar_creation
+    - name: "{{ archive_name }} creation (tar) stdout"
+      debug:
+        var: tar_creation.stdout_lines
+    - name: "{{ archive_name }} creation (tar) stderr"
+      debug:
+        var: tar_creation.stdout_lines

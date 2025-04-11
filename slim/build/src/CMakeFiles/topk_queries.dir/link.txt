@@ -1,0 +1,1 @@
+clang++ -DNO_LOG -DNO_INALGO_TIMINGS -std=c++11 -stdlib=libc++ -Wall -Wextra -pedantic-errors -O3  -stdlib=libc++ -lc++abi CMakeFiles/topk_queries.dir/topk_queries.cc.o CMakeFiles/topk_queries.dir/common/timing.cc.o -o ../topk_queries  ../include/expat-prefix/lib/libexpat.a -lc++ -lc++abi 

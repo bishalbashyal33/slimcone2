@@ -1,0 +1,72 @@
+\documentclass{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+\usepackage{pgfplots}
+\usepackage{import}
+
+\subimport{../}{pgfplotstyles}
+
+\begin{document}
+
+\pgfplotsset{
+  log x ticks with fixed point/.style={
+      xticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  },
+  log y ticks with fixed point/.style={
+      yticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  }
+}
+\begin{tikzpicture}[thick, font=\fontsize{18}{20}\selectfont]
+  \begin{axis}[
+      grid=major,
+      xtick=data,
+      legend style={
+        column sep=2mm,
+        font=\fontsize{12}{14}\selectfont,
+        at={(0.425,1.05)},
+        anchor=south
+      },
+      % transpose legend,
+      xmode=log,
+      log x ticks with fixed point,
+      ymode=log,
+      log basis y={10},
+      legend columns=3,
+      xlabel={document size [MB]},
+      ylabel={memory [MB]},
+    ]
+    \addplot[structplainline] table [x=T, y expr=\thisrow{STRUCTPLAIN}*9.5367431640625e-07, col sep=semicolon]{../../../csv/fig12_ab/heap-peak-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Struct-Dewey}};
+
+    \addplot[structline] table [x=T, y expr=\thisrow{STRUCT}*9.5367431640625e-07, col sep=semicolon]{../../../csv/fig12_ab/heap-peak-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Struct}};
+
+    \addplot[coneline] table [x=T, y expr=\thisrow{CONE}*9.5367431640625e-07, col sep=semicolon]{../../../csv/fig12_ab/heap-peak-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Cone}};
+
+    \addplot[slimuline] table [x=T, y expr=\thisrow{SLIMU}*9.5367431640625e-07, col sep=semicolon]{../../../csv/fig12_ab/heap-peak-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Slim-Dyn}};
+
+    \addplot[slimline] table [x=T, y expr=\thisrow{SLIM}*9.5367431640625e-07, col sep=semicolon]{../../../csv/fig12_ab/heap-peak-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Slim}};
+
+    % Add empty legend to fix the legend layout.
+    \addlegendimage{empty legend}
+    \addlegendentry{}
+  \end{axis}
+\end{tikzpicture}
+
+\end{document}

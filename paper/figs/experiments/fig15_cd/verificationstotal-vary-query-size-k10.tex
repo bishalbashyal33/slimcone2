@@ -1,0 +1,90 @@
+\documentclass{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+\usepackage{pgfplots}
+\usepackage{import}
+
+\subimport{../}{pgfplotstyles}
+
+\begin{document}
+
+\pgfplotsset{
+  log x ticks with fixed point/.style={
+      xticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  },
+  log y ticks with fixed point/.style={
+      yticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  }
+}
+\begin{tikzpicture}[thick, font=\fontsize{18}{20}\selectfont]
+  \begin{groupplot}[
+      group style={
+        group name=myplot,
+        group size=3 by 1,
+        vertical sep=0pt,
+        xlabels at=edge bottom,
+        ylabels at=edge left,
+        yticklabels at=edge left,
+        horizontal sep=0pt},
+      grid=major,
+      xtick=data,
+      legend style={
+        column sep=2mm,
+        font=\fontsize{12}{14}\selectfont,
+        at={(0.5,1.05)},
+        anchor=south},
+      ybar,
+      legend image code/.code={%
+        \draw[#1,/tikz/.cd,yshift=-0.55em]
+        (0cm,1pt) rectangle (20pt,12pt);},
+      enlarge x limits=0.25,
+      /pgf/bar width=4pt,
+      xmode=log,
+      log x ticks with fixed point,
+      ymode=log,
+      log origin=infty,
+      log basis y={10},
+      ymin=1.0,
+      ymax=50000000.0,
+      legend columns=3,
+      xlabel={x},
+      ylabel={verifications},
+      tickpos=left,
+      ytick align=inside,
+      xtick align=inside,
+      x=0.6000000000000001cm
+    ]
+    \nextgroupplot[xlabel=TB]
+    \addplot[tasmcatbar] table [x=Q, y expr=\thisrow{TASM, TB}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+    \addplot[structcatbar] table [x=Q, y expr=\thisrow{STRUCT, TB}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+    \addplot[slimcatbar] table [x=Q, y expr=\thisrow{SLIM, TB}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+
+    \nextgroupplot[xlabel=DBLP]
+    \addplot[tasmcatbar] table [x=Q, y expr=\thisrow{TASM, DBLP}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+    \addplot[structcatbar] table [x=Q, y expr=\thisrow{STRUCT, DBLP}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+    \addplot[slimcatbar] table [x=Q, y expr=\thisrow{SLIM, DBLP}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+
+    \addlegendentry{\textsc{Tasm}};
+    \addlegendentry{\textsc{Struct}};
+    \addlegendentry{\textsc{Slim}};
+
+    \nextgroupplot[xlabel=SP]
+    \addplot[tasmcatbar] table [x=Q, y expr=\thisrow{TASM, SP}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+    \addplot[structcatbar] table [x=Q, y expr=\thisrow{STRUCT, SP}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+    \addplot[slimcatbar] table [x=Q, y expr=\thisrow{SLIM, SP}*1.0, col sep=semicolon]{../../../csv/fig15_cd/verificationstotal-vary-query-size-k10.stat};
+  \end{groupplot}
+\end{tikzpicture}
+\end{document}

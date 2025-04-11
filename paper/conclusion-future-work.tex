@@ -1,0 +1,9 @@
+% !TEX root = kocher-topk-indexing.tex
+
+In this paper, we introduced a novel indexing technique for top-$k$ subtree
+similarity queries, which retrieve the $k$ most similar subtrees in a document
+$T$ w.r.t.\ a query tree $Q$. We proposed the first incrementally updatable, linear-space index to solve this problem. Previous solutions either scan the entire document, or they build an index, but the index is static (not updatable) and large (quadratic in the document size in the worst case). The document is the database on which we compute the top-$k$ query. Computing a quadratic-size index is not feasible for large documents.
+
+We proposed the candidate score, which sorts subtrees such that more promising subtrees appear earlier in the sort order. We could show that processing subtrees in candidate score order substantially reduces the number of items that must be processed and verified. We developed \shincone{}, a novel algorithm that leverages our linear-size index to efficiently retrieve candidates in non-increasing candidate score order. \shincone{} is not tailored to XML (like previous work) and does not require any tuning parameters.
+
+Our experiments confirmed the effectiveness of our techniques. \shincone{} outperformed the state of the art in almost all scenarios w.r.t.\ memory consumption, number of verifications, indexing time, and query time, often by multiple orders of magnitude.

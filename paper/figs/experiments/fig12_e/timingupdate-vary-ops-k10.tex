@@ -1,0 +1,62 @@
+\documentclass{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+\usepackage{pgfplots}
+\usepackage{import}
+
+\subimport{../}{pgfplotstyles}
+
+\begin{document}
+
+\pgfplotsset{
+  log x ticks with fixed point/.style={
+      xticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  },
+  log y ticks with fixed point/.style={
+      yticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  }
+}
+\begin{tikzpicture}[thick, font=\fontsize{18}{20}\selectfont]
+  \begin{axis}[
+      grid=major,
+      xtick=data,
+      legend style={
+        column sep=2mm,
+        font=\fontsize{12}{14}\selectfont,
+        at={(0.38,1.05)},
+        anchor=south},
+      % transponse legend,
+      xmode=log,
+      ymode=log,
+      log basis y={10},
+      ymin=0.1,
+      ymax=1000000.0,
+      legend columns=3,
+      xlabel={updates},
+      ylabel={runtime [ms]}
+    ]
+    \addplot[mergeline] table [x=T, y expr=\thisrow{SLIMUr}*1.0, col sep=semicolon]{../../../csv/fig12_e/timingupdate-vary-ops-k10.stat};
+    \addlegendentry{\textsc{Rename}};
+
+    \addplot[slimline] table [x=T, y expr=\thisrow{SLIMnew}*1.0, col sep=semicolon]{../../../csv/fig12_e/timingupdate-vary-ops-k10.stat};
+    \addlegendentry{\textsc{Slim-FromScratch}};
+
+    \addplot[slimtline] table [x=T, y expr=\thisrow{SLIMUd}*1.0, col sep=semicolon]{../../../csv/fig12_e/timingupdate-vary-ops-k10.stat};
+    \addlegendentry{\textsc{Delete}};
+  \end{axis}
+\end{tikzpicture}
+
+\end{document}

@@ -1,0 +1,62 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 Daniel Kocher, Manuel Kocher
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+################################################################################
+################################# Description ##################################
+################################################################################
+#
+# IMPORTANT: This is not a standalone Ansible script.
+# Copies all files to compile the paper (with all plots in the experimental
+# section) from results/ to paper/csv/. Uses Ansible's special variable
+# playbook_dir.
+#
+################################################################################
+
+---
+  - name: "Copy result files from results/ to paper/csv/"
+    copy:
+      src: "{{ playbook_dir }}/results/{{ item }}.stat"
+      dest: "{{ playbook_dir }}/paper/csv/{{ item }}.stat"
+    with_items: [
+      "fig12_ab/heap-peak-vary-document-size-k10",
+      "fig12_ab/timingindexing-vary-document-size-k10",
+      "fig12_cd/heap-peak-vary-document-size-k10",
+      "fig12_cd/timingindexing-vary-document-size-k10",
+      "fig12_e/timingupdate-vary-ops-k10",
+      "fig12_f/timingupdate-vary-ops-k10",
+      "fig13_ab/timingfiltering-vary-document-size-k10",
+      "fig13_ab/verificationstotal-vary-document-size-k10",
+      "fig13_cd/timingfiltering-vary-document-size-k10",
+      "fig13_cd/verificationstotal-vary-document-size-k10",
+      "fig14_ab/timingfiltering-vary-document-size-k10",
+      "fig14_ab/verificationstotal-vary-document-size-k10",
+      "fig14_cd/timingfiltering-vary-document-size-k10",
+      "fig14_cd/verificationstotal-vary-document-size-k10",
+      "fig15_ab/timingfiltering-vary-query-size-k10",
+      "fig15_ab/verificationstotal-vary-query-size-k10",
+      "fig15_cd/timingfiltering-vary-query-size-k10",
+      "fig15_cd/verificationstotal-vary-query-size-k10",
+      "fig16_ab/timingfiltering-vary-k-q16",
+      "fig16_ab/verificationstotal-vary-k-q16",
+      "fig16_cd/timingfiltering-vary-k-q16",
+      "fig16_cd/verificationstotal-vary-k-q16"
+    ]
+    delegate_to: localhost

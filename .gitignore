@@ -1,0 +1,6 @@
+*.pyc
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+paper/paper.log

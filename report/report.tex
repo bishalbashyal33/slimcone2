@@ -1,0 +1,253 @@
+\documentclass[a4, 10pt]{article}
+
+% ACM font
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+% packages for functionalities
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}  % \url
+\usepackage{xcolor}  % colors in lstlistings
+\usepackage{listings}  % lstlisting environment
+
+\lstdefinestyle{custombash}{ 
+  backgroundcolor=\color{white},
+  basicstyle=\footnotesize\ttfamily,
+  breakatwhitespace=false,
+  commentstyle=\color{gray},
+  frame=single,
+  % keepspaces=true,
+  language=bash,
+  numbers=left,
+  numbersep=5pt,
+  numberstyle=\tiny\color{gray},
+  rulecolor=\color{black},
+  showspaces=false,
+  stepnumber=1,
+  stringstyle=\color{magenta},
+  tabsize=2,
+  columns=fullflexible,
+  mathescape=true
+}
+
+\newcommand{\todo}[1]{{\color{red}\textbf{TODO:} #1}}
+
+\newenvironment{packed_item}{
+\begin{itemize}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}{\end{itemize}}
+
+\newenvironment{packed_enum}{
+\begin{enumerate}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}{\end{enumerate}}
+
+\newenvironment{packed_descr}{
+\begin{description}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}{\end{description}}
+
+\author{
+  Daniel Kocher \\
+  University of Salzburg \\
+  \href{mailto:dkocher@cs.sbg.ac.at}{\small\texttt{dkocher@cs.sbg.ac.at}}
+  \and
+  Manuel Kocher\footnote{Not a co-author of our ACM SIGMOD 2019 paper, but contributor to the reproducibility package.} \\
+  University of Salzburg \\
+  \href{mailto:manuel.kocher@sbg.ac.at}{\small\texttt{manuel.kocher@sbg.ac.at}}
+  \and
+  Nikolaus Augsten \\
+  University of Salzburg \\
+  \href{mailto:Nikolaus.Augsten@sbg.ac.at}{\small\texttt{Nikolaus.Augsten@sbg.ac.at}}
+}
+
+\title{ACM SIGMOD 2019 Reproducibility Submission for \\ \emph{A Scalable Index for Top-k Subtree Similarity Queries}}
+
+\begin{document}
+
+\maketitle
+
+\section{Hardware, Operating System, and Software}
+\label{sec:hardware-operating-system-and-software}
+
+All experiments were tested on a 64-bit machine with
+
+\begin{packed_item}
+  \item[$\blacksquare$] 2 physical processors, Intel(R) Xeon(R) CPUs E5-2630 v3 2.40 GHz,
+  \item[$\blacksquare$] 8 cores per physical processor ($\Rightarrow$ 16 logical processors),
+  \item[$\blacksquare$] 3 cache levels with sizes 32 KiB (L1d), 32 KiB (L1i), 256 KiB (L2), and 20.480 KiB (L3),
+  \item[$\blacksquare$] 96 GiB of main memory @ 2.133 MHz (1.866 MHz configured clock speed),
+  \item[$\blacksquare$] 2x 1.8 TiB HDDs as secondary storage with a theoretical performance of \newline (1) \emph{read (cache miss/hit)}: 0,5/0,1ms, (2) \emph{write}: 0,015ms, (3) \emph{seek}: 0,5ms,
+  \item[$\blacksquare$] Debian 9 Stretch (\texttt{Linux 4.9.0-8-amd64 \#1 SMP Debian 4.9.144-3 (2019-02-02) x86\_64}) as OS, and
+  \item[$\blacksquare$] the following software packages installed:
+    \begin{packed_item}
+      \item \texttt{ansible}~\footnote{\url{https://www.ansible.com/}} (version $\geq$ 2.2.1.0)
+      \item \texttt{wget} (version $\geq$ 1.18) and \texttt{tar} (version $\geq$ 1.29)
+    \end{packed_item}
+\end{packed_item}
+
+We expect the experiments to run on any machine with modern hardware and the abovementioned versions of Debian Linux and Ansible installed. Ansible will install all additional software packages (using \texttt{apt}).
+
+\section{Quick Start}
+
+Open a terminal and follow three steps:
+
+\begin{packed_enum}
+  \item Install Ansible, wget, and tar
+\begin{lstlisting}[style=custombash]
+sudo apt-get install ansible wget tar # requires sudo/root permissions
+\end{lstlisting}
+  \item Download and extract reproducibility package~\footnote{\url{https://kitten.cosy.sbg.ac.at/index.php/s/fjT3eQ76JekgAK3}}
+\begin{lstlisting}[style=custombash]
+wget https://kitten.cosy.sbg.ac.at/index.php/s/fjT3eQ76JekgAK3/download -O  sigmod2019-reproducibility.tar.gz
+tar xzvf sigmod2019-reproducibility.tar.gz
+\end{lstlisting}
+  \item Run the main Ansible playbook
+\begin{lstlisting}[style=custombash]
+cd sigmod2019-reproducibility
+ansible-playbook -K run_all.yaml # -K asks for sudo password to install packages (hit "Enter" if you are root)
+\end{lstlisting}
+\end{packed_enum}
+
+\section{Reproducibility Package}
+
+The main Ansible playbook \texttt{run\_all.yaml} will automatically (a) install all required software packages, (b) download and extract data sets~\footnote{\url{https://kitten.cosy.sbg.ac.at/index.php/s/jYJC2xzPCNnjJZD}} (2.2 GiB) and queries~\footnote{\url{https://kitten.cosy.sbg.ac.at/index.php/s/m4JixE8xXKG7xkM}} (76 KiB), (c) compile the C++ source code, (d) set up and run all experiments, (e) extract the raw experimental results, and (f) compile the paper with the obtained results.
+
+\subsection{Data Sets, Queries, and Results}
+\label{subsec:datasets-queries-results}
+
+Both data sets and queries contain two directories \texttt{xmark/} and \texttt{realworld/}. The \texttt{xmark/} directory contains five synthetic data sets (generated using the XMark benchmark) and for each XMark data set we extracted four queries with 4, 8, 16, 32, and 64 nodes, respectively (i.e., 100 queries in total). Similarly, the \texttt{realworld/} directory contains three real-world data sets (TreeBank, DBLP, and SwissProt) and for each real-world data set we extracted four queries with 4, 8, 16, 32, and 64 nodes, respectively (i.e., 60 queries in total). Queries were extracted from the corresponding data sets. Naming example: \texttt{xmark4\_query\_16\_2.xml} is the second query with 16 nodes that was extracted from the XMark4 data set and will be used for this data set in our experiments. 
+
+By default, all experimental results are written into a directory \texttt{results/}, which is created automatically. For each of the following plots a dedicated subdirectory is created in \texttt{results/}:
+\begin{packed_item}
+  \item[$\blacksquare$] Figure 12: \qquad \texttt{fig12\_ab/} \quad \texttt{fig12\_cd/}\quad \texttt{fig12\_e/} \quad \texttt{fig12\_f/}
+  \item[$\blacksquare$] Figure 13: \qquad \texttt{fig13\_ab/} \quad \texttt{fig13\_cd/}
+  \item[$\blacksquare$] Figure 14: \qquad \texttt{fig14\_ab/} \quad \texttt{fig14\_cd/}
+  \item[$\blacksquare$] Figure 15: \qquad \texttt{fig15\_ab/} \quad \texttt{fig15\_cd/}
+  \item[$\blacksquare$] Figure 16: \qquad \texttt{fig16\_ab/} \quad \texttt{fig16\_cd/}
+\end{packed_item}
+
+This naming convention for subdirectories is also used in the source code directory of our paper: The directory \texttt{paper/figs/experiments/} contains the \texttt{pgfplots} files, and the corresponding result files can be found in \texttt{paper/csv/} (copied from \texttt{results/}).
+
+\subsection{Package Details}
+\label{subsec:package-details}
+
+The package contains several Python (\texttt{py}) and Ansible (\texttt{yaml}) files. Further, the C++ source code for all algorithms (directories \texttt{tasm-struct/} and \texttt{slim/}) as well as the paper's source code (directory \texttt{paper/}) are provided. Finally, some directories are generated during execution. This section summarizes the most important parts and behaviors.
+
+\subsubsection{Ansible}
+
+We use Ansible to automate our experiments, i.e., the main pipeline to produce the results of our paper is executed using Ansible. Ansible uses \texttt{yaml} files and the purpose of the respective \texttt{yaml} files can be summarized as follows:
+
+\begin{packed_descr}
+  \item[\texttt{run\_all.yaml}] Installs all required software packages and executes all other Ansible (\texttt{yaml}) files (in this order):
+    \begin{packed_descr}
+      \item[\quad $\blacksquare$ \texttt{get\_data.yaml}] fetches the data sets and queries used for our experiments.
+      \item[\quad $\blacksquare$ \texttt{build\_code.yaml}] builds the C++ source code for the algorithms \textsc{Tasm} (TASM-Postorder~\cite{augsten-icde-2010}), \textsc{Struct} (StructureSearch~\cite{cohen-sigmod-2013}), and our algorithms \textsc{Merge}, \textsc{Cone}, \textsc{Slim}, and \textsc{Slim-Dyn}~\cite{kocher-sigmod-2019}.
+      \item[\quad $\blacksquare$ \texttt{build\_symlinks.yaml}] creates the subdirectories for all figures and the symbolic links to the data sets and queries of the resp. figures. For example, \texttt{datasets/fig13\_ab/} contains symbolic links to all XMark data sets and \texttt{queries/fig13\_ab/} contains symbolic links to all XMark queries with $|Q| = 16$ nodes.
+      \item[\quad $\blacksquare$ \texttt{run\_experiments.yaml}] executes experiments for a specific configuration of figure number, number of runs and simultaneously executed processes, a list of $k$ values, a default $k$ value (for experiments with fixed $k$), and a list of update counts (repeated calls of \texttt{profile-all.py}, see below).
+      % \item[\texttt{profile-all.py}] (1) executes all experiments (repeated calls of \texttt{profile.py}, see below), (2) extracts the raw experimental results (repeated calls of \texttt{mystatistics.py}, see below), and (3) formats the results s.t.\ they can be used in our paper (repeated calls of \texttt{merg.py}/\texttt{replaceheader.py}/\texttt{suffixcolumnorder.py}, see below).
+      \item[\quad $\blacksquare$ \texttt{copy\_result\_files.yaml}] copies result files from \texttt{results/} to \texttt{paper/csv/}.
+    \end{packed_descr}
+  Aftwards, the paper is compiled (\texttt{Makefile}) and the \texttt{pdf} file can be found in \texttt{paper/paper.pdf}.
+  \clearpage%
+  The following parameters can be passed to \texttt{run\_all.yaml} using JSON syntax:
+  \begin{packed_descr}
+    \item[\texttt{"vary\_k"}] Space-separated string of integers for varying-$k$ experiments (default: ``\texttt{1 10 100}''). 
+    \item[\texttt{"default\_k"}] Single integer that is used for experiments with a fixed $k$ (default: \texttt{10}).
+    \item[\texttt{"runs"}] Number of runs per experiments (robustness parameter; default: \texttt{1}).
+    \item[\texttt{"processes"}] Number of simultaneously executed processes (robustness parameter; default: \texttt{1}).
+    \item[\texttt{"updates"}] Space-separated string of integers for update experiments (default: ``\texttt{1 10 100 ...\ 1000000}'').
+  \end{packed_descr}
+  Example: $k \in \{ 2, 4, 6 \}$, fixed $k = 5$, and 7 simultaneously executed processes
+\begin{lstlisting}[style=custombash]
+ansible-playbook -K run_all.yaml --extra-vars='{ "vary_k": "2 4 6", "default_k": 5, "processes": 7 }'
+\end{lstlisting}
+\end{packed_descr}
+
+\subsubsection{Python}
+
+We use Python (\texttt{python3}) to (1) run the experiments, (2) extract the required statistics from the experimental results, and (3) create the result files s.t.\ they can be used in our paper. Run scripts with ``\texttt{--help}'' to show all options.
+
+\begin{packed_descr}
+  \item[\texttt{profile-all.py}] Calls \texttt{profile.py} repeatedly to run all experiments for figures 12 to 16.
+  \item[\texttt{profile.py}] Executes experiments for a given list of $k$ values, a directory of XML data sets, a directory of XML queries using a given algorithm (C++ binary). The results are stored in a Python dictionary that is serialized to disk. To speed up the experiments, the number of simultaneously executed processes can be specified using ``\texttt{--maxprocesses}'' (default: 1; max. robustness).
+  \item[\texttt{mystatistics.py}] Extracts \emph{all} statistics from a given serialized dictionary to seperate \texttt{stat} files (in CSV format), one for each statistics entry found in the dictionary. Typically, this script is executed for each single serialized dictionary produced by \texttt{profile.py}. Adaptations may be necessary if the experiments are changed.
+  \item[\texttt{merge.py}/\texttt{replaceheader.py}/\texttt{suffixcolumnorder.py}] Helper scripts that merge multiple \texttt{stat} files and postprocess them s.t.\ they can be used in our paper plots (which use \texttt{pgfplots}). Adaptations may be necessary if the experiments are changed.
+\end{packed_descr}
+
+\subsubsection{Directory Structure of the Package}
+
+\begin{packed_descr}
+  \item[\texttt{common/}] Helper files that are used by \texttt{profile.py}.
+  \item[\texttt{paper/}] \LaTeX{} source code of our paper. Compile with \texttt{make}.
+  \item[\texttt{slim/}] C++ source code of our algorithms \textsc{Merge}, \textsc{Cone}, \textsc{Slim}, and \textsc{Slim-Dyn}~\cite{kocher-sigmod-2019}. Build with \texttt{-DNO\_LOG} and \texttt{-DNO\_INALGO\_TIMINGS}, i.e., using \texttt{cmake -D CMAKE\_CXX\_FLAGS="-DNO\_LOG -DNO\_INALGO\_TIMINGS"}.
+  \item[\texttt{tasm-struct/}] C++ source code of the competitor algorithms \textsc{Tasm} (TASM-Postorder~\cite{augsten-icde-2010}) and \textsc{Struct} (StructureSearch~\cite{cohen-sigmod-2013}). Build with \texttt{-DNO\_INALGO\_TIMINGS}, i.e., using \texttt{cmake -D CMAKE\_CXX\_FLAGS="-DNO\_INALGO\_TIMINGS"}.
+\end{packed_descr}
+
+\subsubsection{Directories Created During Execution}
+
+\begin{packed_descr}
+  \item[\texttt{datasets/}] All data sets, fetched automatically by the main Ansible script \texttt{run\_all.yaml}.
+  \item[\texttt{queries/}] All queries, fetched automatically by the main Ansible script \texttt{run\_all.yaml}.
+  \item[\texttt{tmp/}] The C++ binary to be executed is copied into this directory for the experiments.
+  \item[\texttt{results/}] All raw exp. results and result files for our paper plots. Subdirectory naming is discussed in Section~\ref{subsec:datasets-queries-results}.
+\end{packed_descr}
+
+\section{Flexibility}
+
+\subsection{Parameters}
+
+Relevant parameters for our research problem are the data set (document), the query, and the result size $k$. We consider a broad range for each single parameter in our paper, i.e., we varied data set sizes (synthetic and real-world, ranging from 83 MiB to 6.1 GiB), query sizes (five query sizes for each data set, 4 -- 64 nodes), and result size $k$ (range: 1, 10, \ldots $10^4$). We track the build time and the size of the index, the query time, and the number of verified subtrees.
+
+Additional data sets and queries can be included into the \texttt{datasets/} and \texttt{queries/} directories, respectively. Note that both need to be XML files and that the filename of the query must have the data set name as a prefix. Only if this is the case, the script \texttt{profile.py} will use the query as input for the respective data set. Finally, the symbolic link to the data set resp.\ query in the figure subdirectory of the \texttt{dataset/} resp.\ \texttt{queries/} directory must be created. For example, to include a new data set \texttt{abc.xml} and a new query \texttt{abc\_query.xml} (note the prefix of the query filename) into Figure 12a, two symbolic links are required: \texttt{dataset/fig12\_ab/abc.xml} $\rightarrow$ \texttt{abc.xml} and \texttt{queries/fig12\_ab/abc\_query.xml} $\rightarrow$ \texttt{abc\_query.xml}.
+
+To test other values of $k$, the default setup is changed as in the following example, where $k \in \{ 2, 4, 8, 16, 32 \}$:
+
+\begin{lstlisting}[style=custombash]
+ansible-playbook -K run_all.yaml --extra-vars='{ "vary_k": "2 4 8 16 32" }'
+\end{lstlisting}
+
+\subsection{Plots}
+
+We use \texttt{pgfplots} to generate our plots. We tailored the plot configurations towards the specific results presented in our paper. To include additional columns or change the x-/y-range, the \texttt{pgfplots} files need to be changed accordingly. These files are stored in \texttt{paper/figs/experiments/}. However, it should still be possible to extract the raw experimental results (using \texttt{profile-all.py}) for new data sets, queries, and $k$ values.
+
+\section{Time Estimates}
+
+The reproducibility pipeline is not optimized towards minimizing the number of executions, i.e., some parameter configurations may be executed multiple times. This is to simplify the structure of \texttt{profile-all.py}, which is organized in a figure-based manner. Based on our experiences, running all experiments with 2 simultaneously executed processes and 1 run will take about 40 hours.
+
+% Based on our experiences, we can give the following (rough) estimates  assuming that a single process runs at a time:
+
+% \begin{table}[ht!]
+%   \centering
+%   \caption{Estimated experiments runtimes.}
+%   \begin{tabular}{l||c|c|c|c|c|c|}
+%     \hline
+%     \textbf{Figure} & 12a/b/c/d & 12e/f & 13a/b/c/d & 14a/b/c/d & 15a/b/c/d & 16a/b/c/d \tabularnewline
+%     \hline
+%     \textbf{Est. runtime} & $\leq 8$h & $\leq 12$h & $\leq 7$h & $\leq 21$h & $\leq 34$h & $\leq 26$h \tabularnewline
+%     \hline
+%   \end{tabular}
+% \end{table}
+
+Our estimations assume that a single run is executed per experiment. For the experiments in our paper, we use 5 runs per experiment and compute the average over all runs. The runtimes can be reduced by executing processes in parallel. However, increasing the number of parallel processes may affect the robustness of the results. For example, to use 6 parallel processes, call the main Ansible file as follows:
+
+\begin{lstlisting}[style=custombash]
+ansible-playbook -K run_all.yaml --extra-vars='{ "processes": 6 }'
+\end{lstlisting}
+
+\section{ACM SIGMOD 2019 Paper}
+\label{sec:acm-sigmod-2019-paper}
+
+Kocher and Augsten. A Scalable Index for Top-$k$ Subtree Similarity Queries: \newline \url{http://doi.acm.org/10.1145/3299869.3319892}
+
+\bibliographystyle{abbrv}
+\bibliography{bibliography}
+
+\end{document}

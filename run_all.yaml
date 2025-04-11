@@ -1,0 +1,127 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 Daniel Kocher, Manuel Kocher
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+################################################################################
+############################### Argument Passing ###############################
+################################################################################
+#
+# One or more parameters can be passed to this Ansible script using Ansible's
+# built-in "--extra-vars" mechanism and JSON syntax. Usage:
+# ansible-playbook -K run_all.yaml --extra-vars='{ "vary_k": "...", "default_k": "..." , "runs": "...", "processes": "...", "updates": "..." }'
+#
+# vary_k  a string with a whitespace-separated list of all k values for
+#         Figure 16 experiments (varying k) (default: "1 10 100")
+#         Example:  vary k over values 1, 5, 10, 20, and 40:
+#                   --extra-vars='{ "vary_k": "1 5 10 20 40" }'
+#
+# default_k a single k value (integer) that is used in all experiments with
+#           fixed k (Figures 12 to 15) (default: 10)
+#           Example:  use k = 42 as default
+#                       --extra-vars='{ "default_k": 42 }'
+#
+# runs  the number of runs for a single experiment (robustness parameter
+#       default: 1)
+#       Example:  run each experiment 10 times (and use the average)
+#                 --extra-vars='{ "runs": 10 }'
+#
+# processes the max. number of simultaneously executed processes during
+#           experiments (robustness parameter; default 1)
+#           Example:  use 16 concurrent processes
+#                     --extra-vars='{ "processes": 16 }'
+#
+# updates a string with a whitespace-separated list of update counts for
+#         Figures 12e and 12f experiments (varying number of updates)
+#         (default: "10 100 1000 10000 100000 1000000")
+#         Example:  vary number of updates over 20, 200, 2000, and 20000:
+#                   --extra-vars='{ "updates": "20 200 2000 20000" }'
+#
+################################################################################
+---
+- name: Set up local machine for experiments.
+  hosts: localhost
+  connection: local
+  vars:
+    slim_code_dir: "{{ playbook_dir }}/slim"
+    tasm_ss_code_dir: "{{ playbook_dir }}/tasm-struct"
+    code_build_dir: build
+
+    vary_k_all: "{{ vary_k | default('1 10 100') }}"
+    default_k_all: "{{ default_k | default('10') }}"
+    runs_all: "{{ runs | default('1') }}"
+    processes_all: "{{ processes | default('1') }}"
+    updates_all: "{{ updates | default('10 100 1000 10000 100000 1000000') }}"
+
+    packages:
+      - python3
+      - cmake
+      - make
+      - wget
+      - tar
+      - texlive-full
+      - latexmk
+
+  tasks:
+    - name: Install required software packages
+      apt:
+        name: "{{ packages }}"
+      become: yes
+
+    # Updated include syntax
+    - name: Get datasets and queries
+      include_tasks: get_data.yaml
+
+    - name: Build algorithms MERGE, CONE, SLIM, and SLIM-DYN
+      include_tasks: build_code.yaml
+      vars:
+        what: "algorithms MERGE, CONE, SLIM, and SLIM-DYN"
+        build_dir: "{{ slim_code_dir }}/{{ code_build_dir }}"
+        cmake_flags: "-D CMAKE_CXX_FLAGS=\"-DNO_LOG -DNO_INALGO_TIMINGS\""
+
+    - name: Build algorithms TASM and STRUCT
+      include_tasks: build_code.yaml
+      vars:
+        what: "algorithms TASM and STRUCT"
+        build_dir: "{{ tasm_ss_code_dir }}/{{ code_build_dir }}"
+        cmake_flags: "-D CMAKE_CXX_FLAGS=\"-DNO_INALGO_TIMINGS\""
+
+    - name: Build symlinks
+      include_tasks: build_symlinks.yaml
+
+    - name: Run experiments for figures
+      include_tasks: run_experiments.yaml
+      loop: [12, 13, 14, 15, 16]
+      loop_control:
+        loop_var: item
+      vars:
+        exp_fig: "{{ item }}"
+        exp_runs: "{{ runs_all }}"
+        exp_processes: "{{ processes_all }}"
+        exp_vary_k: "{{ vary_k_all }}"
+        exp_default_k: "{{ default_k_all }}"
+        exp_updates: "{{ updates_all }}"
+
+    - name: Copy result files
+      include_tasks: copy_result_files.yaml
+
+    - name: Compile paper with new plots
+      make:
+        chdir: "{{ playbook_dir }}/paper/"
+        target: all

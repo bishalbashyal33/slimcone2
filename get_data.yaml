@@ -1,0 +1,93 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 Daniel Kocher, Manuel Kocher
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+################################################################################
+################################# Description ##################################
+################################################################################
+#
+# IMPORTANT: This is not a standalone Ansible script.
+# Downloads and extracts data sets and queries. Uses Ansible's special variable
+# playbook_dir.
+#
+################################################################################
+
+---
+  # data sets
+  - name: "Check if datasets/ exists"
+    stat:
+      path: "{{ playbook_dir }}/datasets/"
+    register: datasets_dir
+  - name: "Check if datasets/xmark/ exists"
+    stat:
+      path: "{{ playbook_dir }}/datasets/xmark/"
+    register: datasets_xmark_dir
+    when: datasets_dir.stat.exists and datasets_dir.stat.isdir
+  - name: "Check if datasets/realworld/ exists"
+    stat:
+      path: "{{ playbook_dir }}/datasets/realworld/"
+    register: datasets_realworld_dir
+    when: datasets_dir.stat.exists and datasets_dir.stat.isdir
+  - name: "Download data sets"
+    get_url:
+      url: https://kitten.cosy.sbg.ac.at/index.php/s/jYJC2xzPCNnjJZD/download
+      dest: "{{ playbook_dir }}"
+      tmp_dest: "{{ playbook_dir }}"
+    when: not datasets_dir.stat.exists or not datasets_xmark_dir.stat.exists or not datasets_realworld_dir.stat.exists
+  - name: "Unzip data sets"
+    unarchive:
+      src: "{{ playbook_dir }}/download"
+      dest: "{{ playbook_dir }}"
+      remote_src: yes
+    when: not datasets_dir.stat.exists or not datasets_xmark_dir.stat.exists or not datasets_realworld_dir.stat.exists
+
+  # queries
+  - name: "Check if queries/ exists"
+    stat:
+      path: "{{ playbook_dir }}/queries/"
+    register: queries_dir
+  - name: "Check if queries/xmark/ exists"
+    stat:
+      path: "{{ playbook_dir }}/queries/xmark/"
+    register: queries_xmark_dir
+    when: queries_dir.stat.exists and queries_dir.stat.isdir
+  - name: "Check if queries/realworld/ exists"
+    stat:
+      path: "{{ playbook_dir }}/queries/realworld/"
+    register: queries_realworld_dir
+    when: queries_dir.stat.exists and queries_dir.stat.isdir
+  - name: "Download queries"
+    get_url:
+      url: https://kitten.cosy.sbg.ac.at/index.php/s/m4JixE8xXKG7xkM/download
+      dest: "{{ playbook_dir }}"
+      tmp_dest: "{{ playbook_dir }}"
+    when: not queries_dir.stat.exists or not queries_xmark_dir.stat.exists or not queries_realworld_dir.stat.exists
+  - name: "Unzip queries"
+    unarchive:
+      src: "{{ playbook_dir }}/download"
+      dest: "{{ playbook_dir }}"
+      remote_src: yes
+    when: not queries_dir.stat.exists or not queries_xmark_dir.stat.exists or not queries_realworld_dir.stat.exists
+
+  # cleanup
+  - name: "Remove download file in {{ playbook_dir }}"
+    file:
+      path: "{{ playbook_dir }}/download"
+      state: absent

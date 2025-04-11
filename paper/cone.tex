@@ -1,0 +1,72 @@
+% !TEX root = kocher-topk-indexing.tex
+
+\lowerboundmerge{} processes one stripe per round and computes the label lower bound for all subtrees in a stripe. The stripes may be large, leading to slow execution times. We observe, however, that the size of the partitions within a stripe may vary greatly. The  inverted lists of frequent labels are very long (e.g., the list of the ``article'' tag in the DBLP bibliography), leading to large partitions. Then, the runtime is dominated by processing the partitions of long lists.
+
+In this section we present \cone, an algorithm that addresses this issue. \cone{} processes only a subset of the partitions in each stripe.  The inverted lists are sorted and short lists are accessed first. Therefore, the algorithm may terminate before considering any of the large partitions. \cone{} uses an edit distance bound $\BigB$, which is zero initially and is incremented in each round. Only partitions that possibly contain a subtree $T_i$ at distance $\BigB$ from query $Q$ are considered.
+
+Assume we know that there are $\lOf{T_i}$ labels in $Q$ that do not exist in subtree $T_i$. We call $\lOf{T_i} = \sizeOf{\LabelMultiset{Q} \setminus \LabelMultiset{T_i}}$ the \emph{number of missing} labels in $T_i$ w.r.t.\ $Q$. Then we can draw conclusions on the size of $T_i$ that is required to achieve edit distance $\BigB$.
+
+\begin{restatable}[Size Interval]{theorem}{theoremsizeinterval}
+\label{th:size-interval}
+%
+Let $T_i$ be a subtree of document $T$, $Q$ be the query tree, $\lOf{T_i}$ be the number of missing labels in $T_i$ w.r.t.\ $Q$, and $\BigB\geq 0$ an edit distance bound. If $\TED{Q}{T_i}\leq \BigB$, then $|T_i|$ is in the \emph{size interval}
+\begin{equation}
+\siOf{\BigB, Q, T_i} = \interval{\sizeOf{Q} - \BigB; \sizeOf{Q} + \BigB - \lOf{T_i}}
+\end{equation}
+\end{restatable}
+
+For a given edit distance bound, $\BigB$, the subtrees within the size interval are called \emph{pre-candidates}. The \cone{} algorithm proceeds in rounds. In every round some additional partitions are processed. Every round examines one additional list until all lists are initialized. We call a list \emph{initialized} if we have already processed a partition in that list.
+
+In the first round, $\BigB = 0$, and we process the partition of subtree size $\sizeOf{Q}$ in the first list (cf.\ Theorem~\ref{th:size-interval}). The subtrees in this partition can achieve an edit distance of $0$ since their size matches the query size and all labels may match (no label mismatch found so far). Notably, these are the only subtrees that can achieve edit distance $0$. Subtrees in other lists have at least one missing label w.r.t.\ $Q$, and subtrees in another partition of the first list are either smaller or larger than $\sizeOf{Q}$.
+
+In every round $\BigB$ is incremented and an additional list is considered (if non-initialized lists are left). For the $j$-th list that we process,  $\lOf{T_i} \geq j - 1$: any new subtree $T_i$ that we find in the $j$-th list has at least $j - 1$ missing labels since we have processed all subtrees of size $\sizeOf{T_i}$ in the previous $j - 1$ lists and did not see $T_i$.
+
+We process only a subset of the partitions in a given list and round, namely the partitions that satisfy the size interval of the current round. \figref{baseline-inverted-list-index-cone} illustrates this partition-based traversal.
+
+\begin{figure}[ht!]
+  \centering
+  %\scalebox{0.95}{\includestandalone{figs/baseline-inverted-list-index-cone}}
+  \includegraphics{figs/baseline-inverted-list-index-cone}
+  \caption{Cone traversal of the inverted list index in candidate score order.}
+  \label{fig:baseline-inverted-list-index-cone}
+\end{figure}
+
+The \cone{} algorithm distinguishes between pre-candidates and candidates.
+We use our index structure to generate pre-candidates. In the $i$-th round, $\BigB=i-1$, and we only need to consider the first $i$ lists in the index. Similar to \lowerboundmerge{}, we maintain two pointers, $\ptrup{}$ and $\ptrdown{}$, for each list, initialized to the partition of the subtree size closest to $\sizeOf{Q}$. The pointers are used to generate pre-candidates from a partition. Some pre-candidates may be promoted to candidates. A pre-candidate $T_i$ gets promoted whenever its label lower bound is equal to $\BigB$. Candidates are verified immediately, whereas the remaining pre-candidates are stored in the lower bound cache ($lbc$) for verification in a later round (cf.\ \subsecref{baseline-algorithms}).
+
+\paragraph{Inverted List Ordering}
+
+Since \cone{} examines lists one by one, the list order is important. Different pre-candidates may be reported for different list orders, resulting in earlier/later termination as well as fewer/more label lower bound computations and verifications. Consider, for example, the lists in \figref{running-example-cone} in reversed order $\left[l_b, l_x, l_a\right]$. Then, $\LLBshort{Q}{T_{15}} = 3$ is computed in round 1 and $T_{15}$ is cached for the round with $\BigB = 3$. Since the list length corresponds to the label frequency (a long list implies many subtrees with this label), we order the lists in ascending order by their length.
+
+\medskip
+
+Like in \lowerboundmerge{}, we may not be able to produce enough candidates from the lists that share a label with the query. In this rare case, we fall back to \lowerboundmerge{} on all remaining lists to derive a correct ranking (cf.\ Section~\ref{sec:baseline}). The pseudo code of \cone{} is given in \algoref{conetopk} in the appendix.
+
+\begin{restatable}{theorem}{theoremconeecorrectnessscoreorder}
+\label{th:cone-correctness-score-order}
+\cone{} solves the top-$k$ subtree similarity problem and verifies subtrees in candidate score order.
+\end{restatable}
+
+\begin{example}
+
+\figref{running-example-cone} shows \cone{} applied on our running example, $k = 3$. The first round, $\BigB = 0$, retrieves and initializes $l_a$ since $l_a$ is the shortest list among all lists of the query labels. Pointer $l$ is initialized to $T_9$, pointer $r$ to $T_6$. Then, pre-candidates $T_6$, $T_{11}$ are generated from partition $0$ of $l_a$.
+%
+Subtrees $T_6$ and $T_{11}$ may match $Q$ exactly since there is no label mismatch so far, and $\sizeOf{T_6} = \sizeOf{T_{11}} = \sizeOf{Q}$. Next, we compute the true label lower bounds using the node index; $\LLBshort{Q}{T_6} = \LLBshort{Q}{T_{11}} = 0$.
+%
+Both are verified and round 1 concludes; $R' = \left[ T_6, T_{11} \right]$ and $\BigB$ is incremented (lower bound cache $lbc$ is empty). In round 2, we first process $l_a$ again. The next partition of $l_a$ contains subtrees of size $2$ ($T_9$, $T_2$) and $7$ ($T_7$), hence no pre-candidates are reported from $l_a$. Then, we initialize and process list $l_b$ ($l$ points to $T_9$, $r$ to $T_6$), which does not provide us with new pre-candidates ($T_6$, $T_{11}$ were already processed, indicated by the gray/green boxes).
+%
+In round 3, $\BigB = 2$, $T_9$ and $T_2$ are reported from $l_a$, and $T_5$ is reported from $l_b$. All pre-candidates are promoted since $\LLBshort{Q}{T_9} = \LLBshort{Q}{T_2} = \LLBshort{Q}{T_5} = 2$, resulting in $R' = \left[ T_6, T_5, T_9 \right]$.
+%
+Since $\BigB \geq \TEDRshort{R\at{k}}$, we terminate; $R = \left[ T_6, T_5, T_9 \right]$. \figref{running-example-cone} depicts the processed list entries.
+
+Compared to \lowerboundmerge{}, \cone{} processes only $2$ lists (instead of $4$) and computes only 4 label lower bounds. Notice how the presence of $T_{15}$ in list $l_b$ does not impose any overhead because we terminate before it is processed.
+
+\begin{figure}[ht!]
+  \centering
+  %\includestandalone{figs/running-example-cone}
+  \includegraphics{figs/running-example-cone}
+  \caption{Processed subtrees of \cone{}.}
+  \label{fig:running-example-cone}
+\end{figure}
+
+\end{example}

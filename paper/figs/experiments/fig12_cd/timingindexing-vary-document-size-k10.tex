@@ -1,0 +1,70 @@
+\documentclass{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+\usepackage{pgfplots}
+\usepackage{import}
+
+\subimport{../}{pgfplotstyles}
+
+\begin{document}
+
+\pgfplotsset{
+  log x ticks with fixed point/.style={
+      xticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  },
+  log y ticks with fixed point/.style={
+      yticklabel={
+        \pgfkeys{/pgf/fpu=true}
+        \pgfmathparse{exp(\tick)}%
+        \pgfmathprintnumber[fixed relative, precision=3]{\pgfmathresult}
+        \pgfkeys{/pgf/fpu=false}
+      }
+  }
+}
+\begin{tikzpicture}[thick, font=\fontsize{18}{20}\selectfont]
+  \begin{axis}[
+      grid=major,
+      xtick=data,
+      legend style={
+        column sep=2mm,
+        font=\fontsize{12}{14}\selectfont,
+        at={(0.5,1.05)},
+        anchor=south},
+      ybar,
+      legend image code/.code={%
+        \draw[#1,/tikz/.cd,yshift=-0.55em]
+        (0cm,1pt) rectangle (16pt,12pt);},
+      symbolic x coords={TB,DBLP,SP,XMark1,XMark2,XMark4,XMark8,XMark16},
+      enlarge x limits=0.25,
+      ymode=log,
+      log origin=infty,
+      log basis y={10},
+      ymin=1.0,
+      ymax=10000.0,
+      legend columns=2,
+      xlabel={document},
+      ylabel={runtime [s]},
+    ]
+    \addplot[structbar] table [x=SYM, y expr=\thisrow{STRUCT}*0.001, col sep=semicolon]{../../../csv/fig12_cd/timingindexing-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Struct}};
+
+    \addplot[conebar] table [x=SYM, y expr=\thisrow{CONE}*0.001, col sep=semicolon]{../../../csv/fig12_cd/timingindexing-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Cone}};
+
+    \addplot[slimubar] table [x=SYM, y expr=\thisrow{SLIMU}*0.001, col sep=semicolon]{../../../csv/fig12_cd/timingindexing-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Slim-Dyn}};
+
+    \addplot[slimbar] table [x=SYM, y expr=\thisrow{SLIM}*0.001, col sep=semicolon]{../../../csv/fig12_cd/timingindexing-vary-document-size-k10.stat};
+    \addlegendentry{\textsc{Slim}};
+  \end{axis}
+\end{tikzpicture}
+
+\end{document}

@@ -1,0 +1,79 @@
+% !TEX root = kocher-topk-indexing.tex
+
+The key idea of our approach is to prioritize promising subtrees. If we fill
+the ranking with good subtrees, the ranking filter
+(cf.~Section~\ref{sec:background-notations}) is effective and we can terminate
+early. In this section we define the \emph{candidate score} to rank subtrees. In the following sections we discuss how to retrieve subtrees in the order of their candidate score.
+
+\begin{definition}[Candidate Score]
+\label{def:candidate-score}
+%
+Given query $Q$ and document $T$, the candidate score of a subtree $T_i$ of $T$ is
+\[
+  score(T_i)=\frac{1}{1+\LLBshort{Q}{T_i}},
+\]
+where $\LLBshort{Q}{T_i}$ is the label lower bound between $Q$ and $T_i$.
+\end{definition}
+
+The candidate score is in the interval $(0,1]$, more promising subtrees score higher. The candidate score imposes a total order on the subtrees of document $T$, which we call \emph{candidate score order}: Given two subtrees $T_i, T_j \in T$, $T_i > T_j$ iff $score\left( T_i \right) > score \left( T_j \right)$.
+
+A subtree $T_i$ is processed by computing the tree edit distance between $T_i$ and the query $Q$, and by inserting $T_i$ into the ranking if $\TED{Q}{T_i}<\TEDRshort{R[k]}$.
+%
+If we process the subtrees in candidate score order, we can stop after $m$ subtrees if the following stopping condition holds.
+
+\begin{restatable}[Early Termination]{lemma}{lemmaearlytermination}
+\label{lem:termination-criterion}
+%
+Let $T^i$ be the $i$-th subtree of document $T$ in candidate score order w.r.t.\ query $Q$ (breaking ties arbitrarily), $R'$ a top-$k$ ranking of the subtrees $T^1, T^2, \ldots, T^m$, $k \leq m < \sizeOf{T}$. If $\TEDRshort{R'\at{k}} \leq \LLBshort{Q}{T^{m + 1}}$, then $R'$ is a valid top-$k$ ranking for all subtrees $T^i \in T$.
+\end{restatable}
+
+\paragraph{Simple Algorithm}
+
+A simple top-$k$ subtree similarity algorithm, \simplealg{}, that uses  Lemma~\ref{lem:termination-criterion} and the size filter (cf.\ Section~\ref{sec:background-notations}) proceeds as follows:
+compute the score for each subtree $T_i \in T$, $1 \leq \sizeOf{T_i} \leq \tau$, and sort all subtrees by score, process the subtrees in sort order, and stop when the early termination condition holds.
+
+\paragraph{Running Example}
+
+\figref{running-example} shows an example document $T$, an example query $Q$, and the edit distance ($\delta$) for all subtrees $T_i \in T$ w.r.t.\ $Q$. Each node is represented by its label and the postorder identifier (subscript number). In the examples, we refer to the  subtree rooted in the $i$-th node of $T$ in postorder as $T_i$.
+
+\begin{figure}[H]
+  \centering
+  %\includestandalone[width=0.45\textwidth]{figs/running-example}
+  \includegraphics[width=0.45\textwidth]{figs/running-example}
+  \caption{Running example.}
+  \label{fig:running-example}
+\end{figure}
+
+\begin{example}
+
+We compute the top-$k$ ranking, $k = 3$, for $Q$ in $T$ using \simplealg{} (cf.\ \figref{running-example}). Due to the size filter, the maximum subtree size that must be considered is $\tau = 2\sizeOf{Q} + k = 11$. We compute the label lower bound for all subtrees $T_i$, $\sizeOf{T_i} \leq \tau$ and rank them by candidate score.
+%
+For example, the label lower bound for $T_9$ is $\LLBshort{Q}{T_9} = \LLB{Q}{T_9} = 2$, where $\LabelMultiset{Q} = \Multiset{a, b, b, x}$ and $\LabelMultiset{T_9} = \Multiset{a, x}$; the candidate score of $T_9$ is $score(T_9) = 1/3$.
+%
+The result is shown in \tblref{all-llbs-running-example-q1}; we order subtrees by postorder position in the case of ties; $T_{17}$ is not listed since $|T_{17}|>\tau$.
+\parskip0pt\begin{table}[H]
+  \centering
+  \caption{Example subtrees ordered by candidate score.}
+  \label{tbl:all-llbs-running-example-q1}
+  \begin{tabular}{l|l|l}
+    $\LLBshort{Q}{T_i}$ & $score(T_i)$ & Subtrees \tabularnewline
+    \hline\hline
+    $0$ & $1$ & $T_6$, $T_{11}$ \tabularnewline
+    \hline
+    $2$ & $1/3$ & $T_2$, $T_5$, $T_9$ \tabularnewline
+    \hline
+    $3$ & $1/4$ & $T_1$, $T_3$, $T_4$, $T_7$, $T_8$, $T_{10}$, $T_{13}$, $T_{14}$, $T_{15}$ \tabularnewline
+    \hline
+    $4$ & $1/5$ & $T_{12}$ \tabularnewline
+    \hline
+    $5$ & $1/6$ & $T_{16}$ \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\simplealg{} first processes $T_6$, $T_{11}$, and $T_2$ in this order and computes $\TED{Q}{T_6} = 0$, $\TED{Q}{T_{11}} = 4$, and $\TED{Q}{T_2} = 3$, resulting in the intermediate ranking $R' = \left[ T_6, T_2, T_{11} \right]$.
+%
+Since $\TEDRshort{R'\at{k}} = 4$ and $\LLBshort{Q}{T'} = 2$ for the next unprocessed subtree $T' = T_5$, we continue and verify $T_5$ and $T_9$. $\TED{Q}{T_5} = 2$, $\TED{Q}{T_9} = 2$, resulting in $R' = \left[ T_6, T_5, T_9 \right]$.
+%
+Now, $\TEDRshort{R'\at{k}} = 2 \leq \LLBshort{Q}{T'} = 3$ for the next subtree $T' = T_1$, and we can terminate.
+\end{example}

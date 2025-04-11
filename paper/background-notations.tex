@@ -1,0 +1,83 @@
+% !TEX root = kocher-topk-indexing.tex
+
+\paragraph{Trees}
+
+We assume \emph{rooted, ordered, labeled trees}. A \emph{tree} $T$ is a directed, acyclic, connected graph with nodes $\VOf{T}$ and directed edges $\EOf{T} \subseteq \VOf{T} \times \VOf{T}$. Each node has at most one incoming edge, the node with no incoming edge is the \emph{root node}. The size of a tree, $\sizeOf{T}=\sizeOf{\VOf{T}}$, is the number of its nodes.
+%
+In an edge $\pair{u}{v} \in \EOf{T}$, $u$ is the \emph{parent} of $v$, denoted $\parentOf{v}$, and $v$ is the \emph{child} of $u$. Two nodes are \emph{siblings} if they have the same parent. A \emph{leaf node} has no children. Each node $u$ has a \emph{label}, $\labelOf{u}$, which is not necessarily unique. The multiset of all labels in $T$ is $\LabelMultiset{T}$.
+%
+The \emph{postorder} (\emph{preorder}) \emph{identifier} of node $u$, $\postorderOf{u}$ ($\preorderOf{u}$), is the postorder (preorder) position of $u$ in the tree (1-based numbering).  The trees are \emph{ordered}, i.e., the sibling order matters. If node $u$ is on the path from the root to node $v$, $u\neq v$, then $v$ is a \emph{descendant} of $u$, and $u$ is a \emph{ancestor} of $v$.
+%
+A \emph{subtree} $T_u$ of $T$ is a tree that consists of node $u$, all descendants of $u$, and all edges in $\EOf{T}$ connecting these nodes.
+
+\paragraph{Tree Edit Distance}
+
+The edit distance, $\TED{S}{T}$, between two trees, $S$, $T$, is the minimum number of node edit operations that transforms $S$ into $T$. We assume the standard node operations~\cite{zhang-siam-1989}: \emph{Rename} changes the label of a node. \emph{Delete} removes a node $u$ and connects the children of the deleted node to its parent, starting at the sibling position of $u$ and maintaining the  sibling order.
+%
+\emph{Insert} adds a new node $u$ as the $i$-th child of an existing node $p$, replacing a (possibly empty) sequence $C=(c_i, c_{i+1}, \ldots, c_j)$ of $p$'s children; the child sequence $C$ is connected under the new node $u$. Insert and delete are reverse operations. The fastest algorithms for the tree edit distance run in $\BigOOf{|T|^3}$ time and $\BigOOf{|T|^2}$ space~\cite{pawlik-infsys-2016}, i.e., computing the edit distance is expensive and should be avoided.
+
+\paragraph{Lower Bounds}
+
+A lower bound for the tree edit distance may underestimate the true distance, but never overestimates it. A number of edit distance lower bounds have been defined~\cite{li-sigmod-2013}. Lower bounds are typically computed much faster than the edit distance. We leverage the \emph{label lower bound},
+\begin{equation}
+\LLBshort{S}{T} = \LLB{S}{T} \leq \TED{S}{T}\footnote{$A \nplus B$ denotes the intersection between two multisets, $A$ and $B$.},
+\end{equation}
+and the \emph{size lower bound},
+\begin{equation}
+\SLBshort{S}{T} = \SLB{S}{T} \leq \TED{S}{T}
+\end{equation}
+
+\begin{definition}[Top-$k$ Subtree Similarity Query]
+Given a query tree $Q$, a document tree $T$, $k \leq \sizeOf{T}$. The \emph{\tssq{}} returns a top-$k$ ranking $R$, where $R$ is the sequence of the $k$ most similar subtrees of document $T$ w.r.t.\ query $Q$ such that $\forall T_j \not\in R, T_i \in R.\,\TED{Q}{T_i} \leq \TED{Q}{T_j}$.
+%
+The subtrees in $R=[T^1,T^2,\ldots, T^k]$ are sorted by their edit distance to $Q$, i.e., $\forall 1 \leq i < j \leq k.\,\TED{Q}{T^i} \leq \TED{Q}{T^j}$.
+\end{definition}
+
+\paragraph{Problem Statement}
+
+Our goal is a time- and space-efficient solution for the \tssq{} that scales to large document trees.
+
+\medskip
+
+A naive solution computes the edit distance $\TED{Q}{T_i}$ for all subtrees $T_i \in T$, sorts them by $\TED{Q}{T_i}$, and returns the first $k$ subtrees in ascending sort order. Obviously, this approach does not scale to large documents~\cite{augsten-icde-2010}. Efficient techniques prune irrelevant subtrees and compute the edit distance only for candidate subtrees that cannot be filtered. Well known filter techniques include the following.
+
+\paragraph{Size Filter}
+
+Augsten et al.~\cite{augsten-icde-2010} show that only subtrees of a maximum size $\tau = 2\sizeOf{Q} + k$ need to be considered, thus subtrees $T_i$, $\sizeOf{T_i} > \tau$, can be pruned.
+
+\paragraph{Ranking Filter}
+
+Once an intermediate ranking $R'$ of size $k$ is obtained, the edit distance $\TED{Q}{R'[k]}$ ($\TEDRshort{R'\at{k}}$ for short) between the query $Q$ and the last tree $R'[k]$ in the ranking serves as a filter:  A subtree $T_i\notin R'$ improves the final ranking $R'$ iff $\TED{Q}{T_i} < \TEDRshort{R'\at{k}}$~\cite{augsten-icde-2010}.
+%
+Together with a lower bound, $lb \left( Q, T_i \right)$, a subtree can be safely pruned if $lb \left( Q, T_i \right) \geq \TEDRshort{R'\at{k}}$.
+
+The better the ranking, the more effective is the ranking filter. Thus, to reduce the number of verifications it is important to find good subtrees early in the process.
+
+\tblref{notation-overview} provides an overview of our notation.
+\parskip0pt\begin{table}[ht!]
+  \centering
+  \caption{Notation overview.}
+  \label{tbl:notation-overview}
+  {\small
+  \begin{tabular}{l|l}
+    Notation & Description \tabularnewline
+    \hline\hline
+    $T / Q$ & document / query tree \tabularnewline
+    %$Q$ & query tree \tabularnewline
+    $R/R'$ & final / intermediate top-$k$ ranking \tabularnewline
+    $k$ &  results size, $k=|R|$ \tabularnewline
+    $R\at{j}$ & $j$-th entry in $R$ \tabularnewline
+    $T_i$ & a subtree $T_i \in T$ \tabularnewline
+    %& in examples: subtree rooted at postorder id. $i$ \tabularnewline
+    $\parentOf{u}$ & parent of node $u$ \tabularnewline
+    $\preorderOf{u}/\postorderOf{u}$ & preorder / postorder identifier of node $u$ \tabularnewline
+    %$\postorderOf{u}$ & postorder identifier of node $u$ \tabularnewline
+    $\labelOf{u}$ & label of node $u$ \tabularnewline
+    $\LabelMultiset{T_i}$ & label multiset of tree $T_i$ \tabularnewline
+    $\TED{Q}{T_i}$ & edit distance btw.\  $Q$ and $T_i$ \tabularnewline
+    $\TEDRshort{R\at{j}}$ & edit distance btw.\ $Q$ and $j$-th entry in $R$ \tabularnewline
+    $\SLBshort{Q}{T_i}$ & size lower bound btw.\  $Q$ and $T_i$ \tabularnewline
+    $\LLBshort{Q}{T_i}$ & label lower bound btw.\  $Q$ and $T_i$ \tabularnewline
+    $\tau\ \,(=2|Q|+k)$ & maximum relevant subtree size~\cite{augsten-icde-2010}
+  \end{tabular}}
+\end{table}

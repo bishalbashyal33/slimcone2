@@ -1,0 +1,1 @@
+/usr/bin/clang++ -DNO_INALGO_TIMINGS -stdlib=libc++ -Wall -O3 -std=c++11 -g "CMakeFiles/tasm-struct.dir/tree_similarity.cc.o" "CMakeFiles/tasm-struct.dir/common/timing.cc.o" -o ../tasm-struct  ../include/expat-prefix/lib/libexpat.a 

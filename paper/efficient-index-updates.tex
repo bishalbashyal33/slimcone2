@@ -1,0 +1,52 @@
+% !TEX root = kocher-topk-indexing.tex
+
+We extend the slim index to support incremental updates. We support the standard node edit operations as defined in \secref{background-notations}: rename, delete, and insert. Updates affect the inverted list index and the node index.
+
+\paragraph{Updating the Inverted List Index}
+
+The position of a node in the inverted list index is determined by its label and the size of its subtree. The rename operation changes the label of a node, which requires us to remove the node from the list of the old label and insert it into the list of the new label. Insert (delete) changes the subtree size of all ancestors of the inserted (deleted) node, and we must add the new node into the respective list (remove the deleted node). We implement a slim inverted list as a balanced search tree (ordered by subtree size), thus requiring only $\BigOOf{\log l}$ time to find, insert, or delete a node from a list of length $l$. No further changes are required to the slim inverted list index in response to node edit operations on the document. Space and runtime complexity at query time are not affected.
+
+\paragraph{Dynamic Node Index}
+
+The node index encodes the labels and the structure of the document $T$. At query time, we need to efficiently support the following operations: (1) access a node by its identifier, (2) reconstruct a subtree (or the label set of a subtree) given its root node. A subtree is reconstructed by traversing all its nodes in postorder (cf. \subsecref{baseline-index-structure}).
+
+(1) In the static node index, we identify a node by its postorder position. In our dynamic version of the slim-extended node index, we allow arbitrary node identifiers. The node index is stored in an array and the identifier of a node matches the array position, thus a node is accessed in constant time. To ensure a compact representation, we use consecutive identifiers and maintain a free list to reuse array positions after node deletions.
+
+(2) To reconstruct a subtree given its root node, we
+store two additional fields for each node $v$: first child, $c1 \left( v \right)$; next (right) sibling, $sib \left( v \right)$. These fields also allow us to efficiently traverse all nodes of a subtree in postorder.
+
+\begin{figure}[ht!]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    %\includestandalone[width=\textwidth]{figs/update-document-before-insert}
+    \includegraphics[width=\textwidth]{figs/update-document-before-insert}
+    \caption{Example tree before node insertion ($T'$).}
+    \label{fig:document-before-update}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    %\includestandalone[width=\textwidth]{figs/update-document-after-insert}
+    \includegraphics[width=\textwidth]{figs/update-document-after-insert}
+    \caption{Example tree after inserting node $j_{24}$ ($T''$).}
+    \label{fig:document-after-update}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.45\textwidth}
+    %\includestandalone{figs/node-index-slim-updatable-insertop}
+    \includegraphics[width=\textwidth]{figs/node-index-slim-updatable-insertop}
+    \caption{Dynamic node index of example tree $T''$.}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.45\textwidth}
+    %\centering
+    %\includestandalone{figs/inverted-list-index-slim-updatable-insertop}
+    \includegraphics[width=\textwidth]{figs/inverted-list-index-slim-updatable-insertop}
+    \caption{Slim inverted list index of example tree $T''$.}
+    \label{fig:inverted-lists-after-update}
+  \end{subfigure}
+  \caption{Index update example.}
+  \label{fig:updated-node-index}
+\end{figure}
+
+We discuss the effect of updates on the dynamic node index. \emph{Rename:} The node is accessed via its identifier and the label is changed in constant time. \emph{Insert:} The insert operation adds a new node $u$ as the $i$-th child of an existing node $p$, replacing a (possibly empty) sequence $C = \left( c_i, c_{i + 1}, \ldots, c_j \right)$ of $p's$ children, and the child sequence is connected under the new node $u$. We need to insert a new node into the index; the identifier of the new node matches its position in the node index array (new nodes are appended or fill a gap resulting from an earlier deletion). The following existing nodes must be updated. (a) Ancestors of the inserted node $u$: The subtree sizes are incremented by one; if $u$ is the first child of its parent $p$, the first child pointer, $c1 \left( p \right)$, is updated. (b) (Former) children of $p$: The parent pointer of all nodes in $C$ is updated; the next sibling pointers of $c_j$ and (if $i > 1$) $c_{i - 1}$ are updated. To insert a new root node, we assume a virtual node with identifier zero, which is treated as the parent of the actual root node. \emph{Delete} is the reverse of insert. The positions of deleted nodes are registered in the free list.
+
+\figref{updated-node-index} illustrates the slim inverted lists and the dynamic node index after inserting a new node into an example tree $T'$. Only the dashed pointers in $T''$ (colored fields in slim lists and dynamic node index) need to be updated. Red, green, and blue pointers (fields) denote the parent, first child, and next sibling pointers (fields), respectively. Changes to subtree sizes are highlighted in gray. Overall, the complexity of updating the node index is $\BigOOf{d + f}$, where $d$ is the depth and $f$ the maximum fanout of a node in the document. In many real datasets, $f$ and $d$ are small compared to the document size. We show the efficiency of updates in our experiments.

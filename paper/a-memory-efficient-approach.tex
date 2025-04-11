@@ -1,0 +1,100 @@
+% !TEX root = kocher-topk-indexing.tex
+
+\cone{}, presented in the previous section, is effective at producing candidates in score order. Unfortunately, \cone{} relies on an inverted list index that requires quadratic memory (in the worst case, cf.\ \secref{baseline}). In this section, we introduce the \emph{slim inverted list} index, which requires only linear space, and the \shincone{} algorithm that operates on the new index. \shincone{} mimics \cone{}, but instead of scanning materialized inverted lists, relevant list parts are generated on the fly.
+
+\subsection{Indexing in Linear Space}
+\label{subsec:a-memory-efficient-approach-indexing-in-linear-space}
+
+In the worst case, the inverted list index requires quadratic space. To avoid the full materialization of the inverted lists, we introduce an implicit and lossless list representation that requires only linear space.
+
+For a label $\lambda \in \LabelMultiset{T}$, the inverted list index stores every subtree that \emph{contains} label $\lambda$. In other words, a list stores all nodes on every path from a node labeled $\lambda$ up to the document root, and the paths are traversed at index build time. We propose \emph{slim inverted lists} to avoid full list materialization and traverse paths during candidate generation. A slim inverted list (slim list) stores only nodes \emph{labeled} $\lambda$ (i.e., the start of a path). For the path traversals (upwards, towards the root node), we extend the node index (cf. \subsecref{baseline-index-structure}) with parent pointers. This information enables us to reconstruct paths on the fly. \figref{a-memory-efficient-approach-index-example} depicts the slim inverted list index and the slim-extended node index of our running example.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[b]{0.5\textwidth}
+    \centering
+    %\includestandalone{figs/inverted-list-index-slim-example}
+    \includegraphics{figs/inverted-list-index-slim-example}
+    \caption{Slim inverted list index.}
+    \label{fig:inverted-list-index-slim-example}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.5\textwidth}
+    % \centering
+    %\includestandalone{figs/node-index-slim-example}
+    \includegraphics{figs/node-index-slim-example}
+    \caption{Slim-extended node index.}
+    \label{fig:node-index-slim-example}
+  \end{subfigure}
+  \caption{Linear-space index for example document T.}
+  \label{fig:a-memory-efficient-approach-index-example}
+\end{figure}
+
+\subsection{The \shincone{} Algorithm}
+\label{subsec:a-memory-efficient-approach-the-shincone-algorithm}
+
+We propose a new algorithm, \shincone{}, that generates candidates in score order from slim inverted lists. Since we push the path traversals into the candidate generation phase, \shincone{} needs to walk up paths at query time using the slim-extended node index. \shincone{} is also round-based ($\BigB$ is incremented in each round, starting with $0$) and implements the \cone{} traversal on top of our slim inverted list index.
+
+\cone{} can perform a binary search on the inverted lists to find the starting partitions. With slim lists, this approach would consider only nodes labeled $\lambda$, but there may be larger subtrees on the respective paths to the root. Slim lists do not store these subtrees explicitly. To generate correct pre-candidates, we need to traverse the respective paths for each entry of a slim list that represents a subtree smaller than $Q$. Notably, we may not need to traverse the paths completely, but only until we encounter a subtree $T_i$ with size $\sizeOf{T_i} \geq \sizeOf{Q}$.
+
+For the path traversal, we retrieve all node identifiers from the slim list at which a subtree $T_i$ with $\sizeOf{T_i} < \sizeOf{Q}$ is rooted. For each identifier, we look up its parent in the node index and follow the path until the parent's subtree size is greater than or equal to $\sizeOf{Q}$. If the parent's subtree size is $\sizeOf{Q}$, then the parent is in the first partition; we immediately compute the label lower bound w.r.t.\ $Q$ and verify the subtree if the label lower bound matches $\BigB$.
+
+We keep track of the \emph{path ends} ($pe$) for each slim list since we may need to continue the upward traversal in a later round. If the last node on the path roots a subtree that was verified, we store its parent in the path ends.
+Furthermore, we maintain a \emph{path cache} ($pc$) for each slim list that stores all node identifiers on a path with the size of the subtree they root. This avoids redundant traversals of the same path. Details on path cache and path ends are given below.
+
+We may also need to examine additional list entries. Therefore, we store a single pointer for each list, $\mathit{next}$, which points to the next unprocessed list entry and is advanced whenever subtrees larger than $Q$ are examined.
+
+Note that the paths of \emph{all} nodes that root a subtree $T_i$ with $\sizeOf{T_i} < \sizeOf{Q}$ need to be traversed to generate all pre-candidates. While our algorithm climbs up all paths, it visits all nodes that root subtrees that are part of the corresponding full inverted list. Since we stop the traversal when we find a subtree root $i$ s.t.\ $\sizeOf{T_i} \geq \sizeOf{Q}$, we construct the corresponding inverted list only partially. \figref{a-memory-efficient-approach-shining-up-paths} exemplifies this concept for example list $l_b$.
+
+\begin{figure}[t]
+  \centering
+  %\includestandalone{figs/running-example-shining-up-paths}
+  \includegraphics{figs/running-example-shining-up-paths}
+  \caption{Finding the starting point of a slim list.}
+  \label{fig:a-memory-efficient-approach-shining-up-paths}
+\end{figure}
+
+We discuss the main concepts used by \shincone{} to generate candidates in non-increasing score order.
+
+\paragraph{Path Caching}
+
+The path cache ($pc$) stores a bucket for each subtree size that we encounter during the path traversals. In bucket $b$, we collect all roots of subtrees $T_i$ s.t.\ $\sizeOf{T_i} = b$. This is necessary due to the vertical list expansion. Without the path cache, we would need to traverse the path downwards again. Hence, we reuse the path information in later rounds. If we need to consider smaller subtrees, we do a lookup in the path cache. This provides us with a (possibly empty) set of subtree roots, which contains all nodes that belong to a certain partition.
+
+\paragraph{Path Ends}
+
+We need to book-keep information about path ends ($pe$) for each slim list. After successfully climbing up a path to the first node at which a subtree $T_i$ with $\sizeOf{T_i} \geq \sizeOf{Q}$ is rooted, we need to store the last node identifier on the path. This is due to the list expansion towards larger subtrees (w.r.t.\ $\sizeOf{Q}$). Therefore, for each slim list, we maintain a sequence of node identifiers, each of which represents the current end of a path. By storing these node identifiers, we can continue the upward path traversal in later rounds, if necessary.
+
+\paragraph{List Ordering}
+
+To be consistent with the list ordering of \cone{}, we order the lists in \shincone{} like in \cone{}, i.e., by increasing length. For each slim list, we compute and store the length of the corresponding full inverted lists. We refer to this value as \emph{full list length}.
+
+\medskip
+
+Similar to \cone{}, we use \lowerboundmerge{} on all lists of labels that are not in $\LabelMultiset{Q}$ to derive a correct ranking for the case that \shincone{} produces too few results. \algoref{shinconetopk} in the appendix shows the pseudo code of \shincone{}.
+
+\begin{restatable}{theorem}{theoremslimconecorrectnessscoreorder}
+\shincone{} solves the top-$k$ subtree similarity problem and verifies subtrees in candidate score order.
+\end{restatable}
+
+\begin{example}
+
+In \figref{running-example-shincone}, we illustrate \shincone{} for our running example, $k = 3$. Similar to \cone{}, we retrieve slim list $l_a$ since its the shortest w.r.t.\ the full list lengths. The initialization for $l_a$ now differs from \cone{}: we climb up the paths of all entries of $l_a$ since the subtree sizes are smaller than or equal to $\sizeOf{Q}$.
+%
+This results in the path cache and path ends of $l_a$ shown in \figref{running-example-shincone}. During the traversal, we find $T_{11}$ and $T_6$ (in this order) having $\sizeOf{T_6} = \sizeOf{T_{11}} = \sizeOf{Q}$.
+%
+Consequently, we compute $\LLBshort{Q}{T_6} = \LLBshort{Q}{T_{11}} = 0$ and verify both, $\TED{Q}{T_6} = 0$, $\TED{Q}{T_{11}} = 4$. This results in $R' = \left[ T_6, T_{11} \right]$.
+%
+Note that after examining $T_6$ and $T_{11}$, we traverse to their respective parents. Therefore, $T_{16}$ is added to the path ends of $l_a$. No new pre-candidates are processed in round 2. However, list $l_x$ is retrieved and initialized, resulting in the path cache and path ends of $l_x$ depicted in \figref{running-example-shincone}.
+%
+Since we have already stored the node identifiers $9$, $7$, and $16$ during initialization of $l_a$, neither $9$ is added to the path cache nor $7$, $16$ are added to the path ends of $l_x$. In round 3, $\BigB = 2$, we process bucket $2$ of the path cache of $l_a$, generating the pre-candidates $T_2$ and $T_9$.
+%
+We compute $\LLBshort{Q}{T_2} = \LLBshort{Q}{T_9} = 2$, verify $T_2$ and $T_9$, and update $R' = \left[ T_6, T_9, T_2 \right]$. Analogously, we process $T_5$ from the path cache of $l_x$. This results in $R = \left[ T_6, T_5, T_9 \right]$ and we terminate.
+
+\begin{figure}[ht!]
+  \centering
+  %\includestandalone{figs/running-example-shincone}
+  \includegraphics{figs/running-example-shincone}
+  \caption{Slim lists, path caches, and path ends.}
+  \label{fig:running-example-shincone}
+\end{figure}
+
+\end{example}

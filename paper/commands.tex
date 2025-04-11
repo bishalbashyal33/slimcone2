@@ -1,0 +1,99 @@
+% !TEX root = kocher-topk-indexing.tex
+
+\def\plotheight{4cm}
+
+\newcommand{\Index}{\mathcal{I}}
+\newcommand{\BigO}{\mathcal{O}}
+\newcommand{\BigB}{\mathcal{B}}
+
+\newcommand{\OpBrace}[2]{#1 \left( #2 \right)}
+\newcommand{\OpBracket}[2]{#1 \left[ #2 \right]}
+\newcommand{\OpCurlyBrace}[2]{#1 \left\{ #2 \right\}}
+\newcommand{\OpPipe}[2]{#1 \left| #2 \right|}
+
+\newcommand{\Max}[1]{\OpCurlyBrace{max}{#1}}
+\newcommand{\Min}[1]{\OpCurlyBrace{min}{#1}}
+\newcommand{\BigOOf}[1]{\OpBrace{\BigO}{#1}}
+\newcommand{\VOf}[1]{\OpBrace{V}{#1}}
+\newcommand{\VEpsOf}[1]{\OpBrace{V_\epsilon}{#1}}
+\newcommand{\EOf}[1]{\OpBrace{E}{#1}}
+\newcommand{\parentOf}[1]{\OpBrace{par}{#1}}
+\newcommand{\preorderOf}[1]{\OpBrace{pre}{#1}}
+\newcommand{\postorderOf}[1]{\OpBrace{post}{#1}}
+\newcommand{\labelOf}[1]{\OpBrace{\lambda}{#1}}
+\newcommand{\LabelMultiset}[1]{\OpBrace{\mathcal{L}}{#1}}
+\newcommand{\pair}[2]{\OpBrace{}{#1, #2}}
+\newcommand{\sizeOf}[1]{\OpPipe{}{#1}}
+\newcommand{\lOf}[1]{\OpBrace{nml}{#1}}
+\newcommand{\siOf}[1]{\OpBrace{si}{#1}}
+\newcommand{\interval}[1]{\OpBracket{}{#1}}
+\newcommand{\at}[1]{\OpBracket{}{#1}}
+\newcommand{\indexOf}[1]{\OpBracket{idx}{#1}}
+\newcommand{\roundPrologue}[1]{\OpBrace{\mathit{verifyBucket}}{#1}}
+\newcommand{\mergeTopk}[1]{\OpBrace{mergeTopk}{#1}}
+\newcommand{\coneTopk}[1]{\OpBrace{coneTopk}{#1}}
+\newcommand{\shinconeTopk}[1]{\OpBrace{shinconeTopk}{#1}}
+\newcommand{\processSmallerSubtrees}[1]{\OpBrace{processSmaller}{#1}}
+\newcommand{\processLargerSubtrees}[1]{\OpBrace{processLarger}{#1}}
+\newcommand{\evaluateSubtree}[1]{\OpBrace{\mathit{processSubtree}}{#1}}
+\newcommand{\processList}[1]{\OpBrace{processList}{#1}}
+\newcommand{\Indexlist}[1]{\Index{}.\OpBrace{list}{#1}}
+\newcommand{\Indexsizes}{\Index{}.\OpBrace{sizes}{}}
+\newcommand{\ptrdown}{r}
+\newcommand{\ptrup}{l}
+
+\newcommand{\Set}[1]{\OpCurlyBrace{}{#1}}
+\newcommand{\Multiset}[1]{\left\{\!\left\{ #1 \right\}\!\right\}}
+\newcommand{\MultisetOverlap}[2]{#1 \nplus #2}
+\newcommand{\MultisetOverlapSize}[2]{\sizeOf{\MultisetOverlap{\LabelMultiset{#1}}{\LabelMultiset{#2}}}}
+\newcommand{\LLB}[2]{\Max{\sizeOf{#1}, \sizeOf{#2}} - \MultisetOverlapSize{#1}{#2}}
+\newcommand{\LLBshort}[2]{\OpBrace{llb}{#1, #2}}
+\newcommand{\SLB}[2]{\sizeOf{\sizeOf{#1} - \sizeOf{#2}}}
+\newcommand{\SLBshort}[2]{\OpBrace{slb}{#1, #2}}
+\newcommand{\TED}[2]{\OpBrace{\delta}{#1, #2}}
+\newcommand{\TEDRshort}[1]{\OpBrace{\delta}{#1}}
+
+\newcommand{\todo}[1]{\begin{framed}{\color{red}\textbf{TODO:} #1}\end{framed}}
+\newcommand{\todoin}[2][]{{\small \color{red}\textbf{TODO:} #2 (#1)}}
+\newcommand{\forrevision}[2]{{\color{green!65!black}#1}{\color{red}#2}}
+
+\newcommand{\urlfootnote}[1]{\footnote{\url{#1}}}
+
+\newcommand{\tblref}[1]{Table~\ref{tbl:#1}}
+\newcommand{\figref}[1]{Figure~\ref{fig:#1}}
+\newcommand{\algoref}[1]{Algorithm~\ref{algo:#1}}
+\newcommand{\secref}[1]{Section~\ref{sec:#1}}
+\newcommand{\subsecref}[1]{Section~\ref{subsec:#1}}
+\newcommand{\defref}[1]{Definition~\ref{def:#1}}
+\newcommand{\lemref}[1]{Lemma~\ref{lem:#1}}
+\newcommand{\thref}[1]{Theorem~\ref{th:#1}}
+
+\newcommand{\algoname}[1]{\textsc{#1}}
+\newcommand{\tasmpostorder}{TASM-Postorder}
+\newcommand{\tasmpostordershort}{\algoname{Tasm}}
+\newcommand{\structuresearch}{StructureSearch}
+\newcommand{\structuresearchshort}{\algoname{Struct}}
+\newcommand{\structureplainshort}{\algoname{Struct-Dewey}}
+\newcommand{\lowerboundmerge}{MergeAll}
+\newcommand{\lowerboundmergeshort}{\algoname{Merge}}
+\newcommand{\cone}{Cone}
+\newcommand{\coneshort}{\algoname{Cone}}
+\newcommand{\shincone}{SlimCone}
+\newcommand{\shinconeshort}{\algoname{Slim}}
+\newcommand{\shinconedynshort}{\algoname{Slim-Dyn}}
+\newcommand{\simplealg}{\algoname{Simple}}
+
+\newcommand{\datasetname}[1]{{\small{#1}}}
+\newcommand{\xmark}[1]{\datasetname{XMark#1}}
+\newcommand{\dblp}{\datasetname{DBLP}}
+\newcommand{\swissprot}{\datasetname{SwissProt}}
+\newcommand{\treebank}{\datasetname{TreeBank}}
+
+\newcommand{\editop}[1]{$#1$}
+\newcommand{\insertop}{\editop{insert}}
+\newcommand{\deleteop}{\editop{delete}}
+\newcommand{\renameop}{\editop{rename}}
+
+\newcommand{\tsss}{top-$k$ subtree similarity-search}
+\newcommand{\tssq}{top-$k$ subtree similarity query}
+\newcommand{\tssqs}{top-$k$ subtree similarity queries}

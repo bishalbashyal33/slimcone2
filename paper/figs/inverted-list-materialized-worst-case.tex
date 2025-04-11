@@ -1,0 +1,29 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+
+\usetikzlibrary{shapes, positioning, calc}
+
+\begin{document}
+
+{\scriptsize
+\begin{tikzpicture}
+  \node at (0, 0) (l1) {$\lambda_1$};
+  \node[right=0.75 of l1] (l2) {$\lambda_2$};
+  \node[right=0.75 of l2] (l3) {$\lambda_3$};
+  \node[right=0.75 of l3] (ldots) {\ldots};
+  \node[right=0.75 of ldots] (ln1) {$\lambda_{n-1}$};
+  \node[right=0.75 of ln1] (ln) {$\lambda_n$};
+
+  \draw (l1) -- (l2);
+  \draw (l2) -- (l3);
+  \draw (l3) -- (ldots);
+  \draw (ldots) -- (ln1);
+  \draw (ln1) -- (ln);
+\end{tikzpicture}}
+
+\end{document}

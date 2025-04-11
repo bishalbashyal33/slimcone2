@@ -1,0 +1,65 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 Daniel Kocher, Manuel Kocher
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+################################################################################
+################################# Description ##################################
+################################################################################
+#
+# IMPORTANT: This is not a standalone Ansible script.
+# Runs all experiments for a given configuration. Execution is continued on
+# error/exception (to still execute other experiments) but the error message is
+# printed. The configuration is specified using the following variables (cf.
+# run_all.yaml):
+#
+# exp_fig figure number (integer), i.e., which experiments to execute
+#
+# exp_vary_k  a string with a whitespace-separated list of all k values (this
+#             will affect Figure 16 experiments (varying k))
+#
+# exp_default_k a single k value (integer) that is used in all experiments with
+#               fixed k (this will affect experiments for Figures 12 to 15)
+#
+# exp_runs  the number of runs for a single experiment (robustness parameter)
+#
+# exp_processes the max. number of simultaneously executed processes during
+#               experiments (robustness parameter)
+#
+# exp_updates a string with a whitespace-separated list of update counts ( this
+#             will affect experiments for Figures 12e and 12f (varying number
+#             of updates))
+#
+################################################################################
+
+---
+  - name: "Run all experiments for Figure {{ exp_fig }}"
+    script: ./profile-all.py --fig {{ exp_fig }} --runs {{ exp_runs }} --maxprocesses {{ exp_processes }} --vary_k {{ exp_vary_k }} --default_k {{ exp_default_k }} --updates {{ exp_updates }}
+    args:
+      executable: python3
+    register: profile_all_cmd
+    ignore_errors: yes
+  - name: "Print profile-all.py stdout (if return code != 0, skipped otherwise)"
+    debug:
+      msg: "{{ profile_all_cmd.stdout_lines }}"
+    when: profile_all_cmd.rc != 0
+  - name: "Print profile-all.py stderr (if return code != 0, skipped otherwise)"
+    debug:
+      msg: "{{ profile_all_cmd.stderr }}"
+    when: profile_all_cmd.rc != 0

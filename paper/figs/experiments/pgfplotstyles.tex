@@ -1,0 +1,106 @@
+\usepgfplotslibrary{colorbrewer, groupplots}
+
+\pgfplotsset{compat=newest, cycle list/Set1}
+% \pgfplotsset{every axis/.style={scale only axis}}
+
+\usetikzlibrary{patterns}
+
+% colors for all plots
+% algorithm-specific
+\newcommand{\tasmcol}{Dark2-A}
+\newcommand{\structcol}{Dark2-B}
+\newcommand{\slimcol}{Dark2-C}
+\newcommand{\mergecol}{Dark2-D}
+\newcommand{\conecol}{Dark2-E}
+\newcommand{\structplaincol}{Dark2-F}
+\newcommand{\slimtcol}{Dark2-G}
+\newcommand{\slimucol}{Dark2-H}
+
+% shapes for linespoints plots
+% general
+\tikzset{generalshape/.style={mark size=5, solid}}
+% algorithm-specific
+\tikzset{tasmshape/.style={generalshape, mark=square}}
+\tikzset{structshape/.style={generalshape, mark=o}}
+\tikzset{slimshape/.style={generalshape, mark=triangle}}
+\tikzset{coneshape/.style={generalshape, mark=x}}
+\tikzset{mergeshape/.style={generalshape, mark=pentagon}}
+\tikzset{structplainshape/.style={generalshape, mark=diamond}}
+\tikzset{slimtshape/.style={generalshape, mark=asterisk}}
+\tikzset{slimushape/.style={generalshape, mark=star}}
+
+% styles for bar plots (pattern + color)
+% general
+\tikzset{generalbar/.style={}}
+% algorithm-specific
+\tikzset{
+  tasmbar/.style={
+    generalbar,
+    \tasmcol,
+    pattern color=\tasmcol,
+    pattern=horizontal lines}}
+\tikzset{
+  structbar/.style={
+    generalbar,
+    \structcol,
+    pattern color=\structcol,
+    pattern=grid}}
+\tikzset{
+  slimbar/.style={
+    generalbar,
+    \slimcol,
+    pattern color=\slimcol,
+    pattern=north west lines}}
+\tikzset{
+  conebar/.style={
+    generalbar,
+    \conecol,
+    pattern color=\conecol,
+    pattern=north east lines}}
+\tikzset{
+  mergebar/.style={
+    generalbar,
+    \mergecol,
+    pattern color=\mergecol,
+    pattern=crosshatch}}
+\tikzset{
+  structplainbar/.style={
+    generalbar,
+    \structplaincol,
+    pattern color=\structplaincol,
+    pattern=dots}}
+\tikzset{
+  slimtbar/.style={
+    generalbar,
+    \slimtcol,
+    pattern color=\slimtcol,
+    pattern=crosshatch dots}}
+\tikzset{
+  slimubar/.style={
+    generalbar,
+    \slimucol,
+    pattern color=\slimucol,
+    % fill=\slimucol}}
+    pattern=fivepointed stars}}
+
+\tikzset{tasmcatbar/.style={tasmbar}}
+\tikzset{structcatbar/.style={structbar}}
+\tikzset{slimcatbar/.style={slimbar}}
+\tikzset{conecatbar/.style={conebar}}
+\tikzset{mergecatbar/.style={mergebar}}
+\tikzset{structplaincatbar/.style={structplainbar}}
+\tikzset{slimtcatbar/.style={slimtbar}}
+\tikzset{slimucatbar/.style={slimubar}}
+
+% styles for linespoints plots (color + shape)
+% general
+\tikzset{generalline/.style={solid, thick}}
+% algorithm-specific
+\tikzset{tasmline/.style={generalline, \tasmcol, tasmshape}}
+\tikzset{structline/.style={generalline, \structcol, structshape}}
+\tikzset{slimline/.style={generalline, \slimcol, slimshape}}
+\tikzset{coneline/.style={generalline, \conecol, coneshape}}
+\tikzset{mergeline/.style={generalline, \mergecol, mergeshape}}
+\tikzset{structplainline/.style={generalline, \structplaincol, structplainshape}}
+\tikzset{slimtline/.style={generalline, \slimtcol, slimtshape}}
+\tikzset{slimuline/.style={generalline, \slimucol, slimushape}}

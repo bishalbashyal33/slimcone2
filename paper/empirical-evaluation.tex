@@ -1,0 +1,279 @@
+% !TEX root = kocher-topk-indexing.tex
+\newcommand\expplotheight{3.5cm}
+
+We empirically compare our solutions to two state-of-the-art algorithms on both
+synthetic and real-world data. We vary document size, query size, and $k$, and
+measure query time, indexing time, main memory, and the number of verifications.
+
+\subsection{Setup \& Data Sets}
+\label{subsec:empirical-evaluation-setup-data-sets}
+
+\paragraph{Setup}
+
+All experiments were conducted on a 64-bit machine with 8 Intel(R) Xeon(R) CPUs E5-2630~v3, 2.40GHz, 20MB L3 cache (shared), 256KB L2 cache (per core), and 96GB of RAM, running Debian 8.11, kernel 3.16.0-6-amd64. We compile our code with \texttt{clang} (ver.\ 3.5.0-10) at maximum optimization level (\texttt{-O3}).
+%
+Although we have multiple cores, we run all experiments single-threaded with no other load on the machine.  We measure the runtime with \texttt{getrusage}\urlfootnote{http://man7.org/linux/man-pages/man2/getrusage.2.html} (sum of user and system CPU time). Each runtime measurement is an average over five runs.  We measure main memory as the heap peak value provided by the \texttt{libmemusage.so} library\urlfootnote{http://man7.org/linux/man-pages/man1/memusage.1.html} (preloaded using the \texttt{\small LD\_PRELOAD} environment variable).
+
+\paragraph{Data Sets and Queries}
+
+We use the \xmark{} benchmark to generate synthetic data sets of five different sizes. Additionally, we run experiments on three real-world data sets: \treebank{}\urlfootnote{https://www.seas.upenn.edu/~pdtb/} (TB), \dblp{}\urlfootnote{https://dblp.uni-trier.de/xml/dblp.xml.gz}, and \swissprot{}\urlfootnote{ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.xml.gz} (SP). Important data set characteristics are summarized in \tblref{data-sets}. \xmark{}, \dblp{}, and \swissprot{} were also used in previous work~\cite{cohen-sigmod-2013}, although only small subsets of \dblp{} and \swissprot{} were used; we process the full data sets. From each of the data sets (documents, $T$), we randomly extract four different queries, $Q$, with 4, 8, 16, 32, 64 nodes, respectively. We also vary the result size, $k$.
+
+\begin{table}[ht!]
+  \centering
+  \caption{Data set characteristics.}
+  \label{tbl:data-sets}
+  \begin{tabular}{l|c|c|c|c}
+    Name & Size $T$ & \multicolumn{2}{c|}{Size [Nodes]} & \# diff. \tabularnewline
+    \cline{3-4}
+    & [MB] & $|T|$ & avg.\ $|T_i|$ & labels \tabularnewline
+    \hline\hline
+    \xmark{1} & $112$ & $3.6 \cdot 10^6$ & $6.2$ & $510 \cdot 10^3$ \tabularnewline
+    \xmark{2} & $223$ & $7.2 \cdot 10^6$ & $6.2$ & $822 \cdot 10^3$ \tabularnewline
+    \xmark{4} & $447$ & $14.4 \cdot 10^6$ & $6.2$ & $1.3 \cdot 10^6$ \tabularnewline
+    \xmark{8} & $895$ & $28.9 \cdot 10^6$ & $6.2$ & $1.9 \cdot 10^6$ \tabularnewline
+    \xmark{16} & $1\text{,}790$ & $57.8 \cdot 10^6$ & $6.2$ & $2.9 \cdot 10^6$ \tabularnewline
+    \treebank{} & $83$ & $3.8 \cdot 10^6$ & $8.4$ & $ 1.4 \cdot 10^6$ \tabularnewline
+    \dblp{} & $2\text{,}161$ & $126.5 \cdot 10^6$ & $3.4$ & $ 21.6 \cdot 10^6$ \tabularnewline
+    \swissprot{} & $6\text{,}137$ & $479.3 \cdot 10^6$ & $5.1$ & $ 11.4 \cdot 10^6$ \tabularnewline
+  \end{tabular}
+\end{table}
+
+\paragraph{Algorithms}
+
+We compare our algorithms \lowerboundmergeshort{}, \coneshort{}, \shinconeshort{} (cf.\ Sections~\ref{sec:baseline}--\ref{sec:a-memory-efficient-approach}) to the state-of-the-art algorithms TASMPostorder~\cite{augsten-icde-2010,augsten-tkde-2011} (\tasmpostordershort{}, fastest  index-free algorithm) and StructureSearch~\cite{cohen-sigmod-2013} (\structuresearchshort{}, fastest algorithm with precomputed index).
+%
+\shinconedynshort{} refers to the version of \shinconeshort{} with incremental update support (cf. \secref{efficient-index-updates}). All algorithms were implemented in C++11. We maintain the node labels in a dictionary and replace string labels by integers. All indexes reside in main memory. For computing the tree edit distance, we use the algorithm by Zhang \& Shasha~\cite{zhang-siam-1989}, which is efficient for flat trees (depth $\BigO(\log n)$, as is typically the case in XML).
+
+\paragraph{Space-efficient StructureSearch}
+
+Cohen~\cite{cohen-sigmod-2013} implements the StructureSearch algorithm using uncompressed Dewey labels (\structureplainshort{} in our experiments), which leads to large indexes of about 10 times the document size (in MB); in the worst case, the index size is quadratic in the document size since each Dewey label may be of linear size. Cohen suggests to compress the Dewey labels to improve space performance. We take a different approach and use preorder, postorder, and parent (preorder) identifiers to (1) verify ancestor relationships and (2) to generate the ancestor path of a node. Given the pre- and postorder identifiers of two nodes $u$ and $v$, $u$ is an ancestor of $v$ if and only if $\preorderOf{v} > \preorderOf{u} \land \postorderOf{v} < \postorderOf{u}$. We efficiently generate the path between a node $v$ and its ancestor $u$ using the parent pointers. Thus, the node identifiers in our space-efficient implementation (\structuresearchshort) have constant size and we need not deal with compressed Dewey labels to verify node relationships or generate ancestor paths. In our experiments, we show that we substantially reduce the index size w.r.t.\ the original implementation.
+
+\structuresearchshort{} assumes XML and distinguishes common and uncommon labels. Inner nodes and the $x$ most frequent leaf nodes of an XML document are considered common. Further, \structuresearchshort{} has a maximum edit bound $y$. The top-$k$ ranking of \structuresearchshort{} contains only subtrees with a maximum edit distance of $y$. All data sets in our tests are available in XML, thus we configure \structuresearchshort{} as suggested by Cohen~\cite{cohen-sigmod-2013} and set $x = 1000$, $y = \sizeOf{Q}$. Our algorithms do not require any parameters.
+
+\subsection{Indexing}
+\label{subsec:empirical-evaluation-indexing}
+
+We compare the indexes of \structuresearchshort{}, \coneshort{},
+\shinconeshort{}, and \shinconedynshort{} in terms of size (all memory-resident index structures including the document) and runtime to build the index. With \structureplainshort{} we refer to the original implementation of \structuresearchshort{} by Cohen~\cite{cohen-sigmod-2013}, which uses uncompressed Dewey labels. The index of \lowerboundmergeshort{} is identical to the index of \coneshort{} and is not shown separately; \tasmpostordershort{} does not build an index.
+
+The results are shown in Figure~\ref{fig:struct-cone-slim-timingindexing-heap-peak-vary-document-size-k10}.
+%
+For \structureplainshort{}, we estimate the index size based on the instructions of Cohen~\cite{cohen-sigmod-2013} (index size is about $10$ times the document size). Our space-efficient implementation of Cohen's algorithm (\structuresearchshort{}) substantially improves the memory and requires only about $2$--$5$ times the document size (except for TB).
+%
+\coneshort{} and \shinconeshort{} clearly outperform \structuresearchshort{} both in terms of index size and runtime for building the index. Even the space-efficient implementation of \structuresearchshort{} requires at least $1.5$--$3$ times more memory than \shinconeshort{}. Except for \dblp{} and TB, the index size of \shinconeshort{} is within two times the document size.
+%
+Among our algorithms, \shinconeshort{} is faster and builds a smaller index. This is expected since \shinconeshort{} indexes each node once, while \coneshort{} may index each node multiple times. In the worst case, when the depth of the document grows linearly with its size, the index of \coneshort{} grows quadratically; this is not the case for the documents in our test. The size of \shinconedynshort{} (which supports incremental updates) is similar to the size of the space-efficient implementation of \structuresearchshort{} (which does not support updates), but builds much faster.
+
+\paragraph{Incremental Updates}
+
+We compare the time to incrementally update the slim index to the time of building the static slim index from scratch (\textsc{Slim-From-Scratch}). \figref{slim-timingupdate-vary-ops-k10-synthetic} and \figref{slim-timingupdate-vary-ops-k10-realworld} show the results for the \xmark{8} and the \dblp{} data sets, respectively.
+%
+We randomly rename or delete nodes in the document. Insertion is similar to deletion in that it reverses the index updates of a delete operation. The update time is linear in the number of updates for both rename and deletion. As expected, deletion takes slightly more time than rename since all ancestors and children of the deleted node must be updated. The break even point for building the index from scratch is at about $10^5$ deletions / $5 \cdot 10^5$ renames for \xmark{8} and $10^4$ deletions / $10^5$ renames for \dblp{}.
+
+\begin{figure}[h]
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig12_ab/timingindexing-vary-document-size-k10}
+    \caption{Build time, \xmark.}
+    \label{fig:struct-cone-slim-timingindexing-vary-document-size-k10}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig12_ab/heap-peak-vary-document-size-k10}
+    \caption{Index size, \xmark.}
+    \label{fig:struct-cone-slim-heap-peak-vary-document-size-k10}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig12_cd/timingindexing-vary-document-size-k10}
+    \caption{Build time, real world.}
+    \label{fig:struct-cone-slim-timingindexing-vary-document-size-k10-large}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig12_cd/heap-peak-vary-document-size-k10}
+    \caption{Index size, real world.}
+    \label{fig:struct-cone-slim-heap-peak-vary-document-size-k10-large}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig12_e/timingupdate-vary-ops-k10}
+    \caption{Update time, \xmark{8}.}
+    \label{fig:slim-timingupdate-vary-ops-k10-synthetic}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig12_f/timingupdate-vary-ops-k10}
+    \caption{Update time, \dblp.}
+    \label{fig:slim-timingupdate-vary-ops-k10-realworld}
+  \end{subfigure}
+  \caption{Build time, index size, and update time.} % k=10, |Q|=16.
+  \label{fig:struct-cone-slim-timingindexing-heap-peak-vary-document-size-k10}
+\end{figure}
+
+\subsection{Effectiveness and Query Time}
+\label{subsec:empirical-evaluation-querying-and-verifications}
+
+We evaluate our algorithms that process the subtrees in candidate score order (\lowerboundmergeshort, \coneshort, \shinconeshort, \shinconedynshort, cf.\ \figref{merge-cone-slim-timingfiltering-verificationstotal-vary-document-size-k10}).
+%
+Since \shinconeshort{} and \shinconedynshort{} are the same algorithms operating on different indexes, we only discuss \shinconeshort{}.
+%
+Supporting updates only marginally affects the query time for varying query, document, and result size (cf.\ \shinconedynshort{} in Figures~\ref{fig:merge-cone-slim-timingfiltering-verificationstotal-vary-document-size-k10}--\ref{fig:tasm-struct-slim-timingfiltering-verificationstotal-vary-k-q16}).
+%
+\lowerboundmergeshort{} needs to verify many more candidates and is consistently slower than its competitors. This confirms the effectiveness of the clever list traversal used by \coneshort{} and \shinconeshort. In some cases, \coneshort{} is faster than \shinconeshort{} since \shinconeshort{} must build the lists on the fly; we measure the largest difference for \dblp{}, where \shinconeshort{} must traverse many paths to initialize the inverted lists. The number of verifications is the same for both algorithm. Overall, the runtime difference is small in most cases, thus \shinconeshort{} pays a low price for reducing the memory complexity from quadratic to linear.
+
+\begin{figure*}[ht!]
+  \centering
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig13_ab/timingfiltering-vary-document-size-k10}
+    \caption{Query time, \xmark.}
+    \label{fig:merge-cone-slim-timingfiltering-vary-document-size-k10-synthetic}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig13_ab/verificationstotal-vary-document-size-k10}
+    \caption{Verifications, \xmark.}
+    \label{fig:merge-cone-slim-verificationstotal-vary-document-size-k10-synthetic}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig13_cd/timingfiltering-vary-document-size-k10}
+    \caption{Query time, real world.}
+    \label{fig:merge-cone-slim-timingfiltering-vary-document-size-k10-realworld}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig13_cd/verificationstotal-vary-document-size-k10}
+    \caption{Verifications, real world.}
+    \label{fig:merge-cone-slim-verificationstotal-vary-document-size-k10-realworld}
+  \end{subfigure}
+  \caption{\lowerboundmergeshort{}, \coneshort{}, \shinconeshort{}: Query time and number of verifications over document size, k=10, |Q|=16.}
+  \label{fig:merge-cone-slim-timingfiltering-verificationstotal-vary-document-size-k10}
+\end{figure*}
+
+Next, we compare \shinconeshort{} to the two state-of-the-art approaches with precomputed index (\structuresearchshort) resp.\ without index (\tasmpostordershort{}).
+%
+The query time increases with the document size for all solutions except \shinconeshort{} (cf.\ \figref{tasm-struct-slim-timingfiltering-verificationstotal-vary-document-size-k10}). The runtime of \shinconeshort{} may even decrease with the document size. Larger documents have more subtrees, therefore there is a better chance to fill the ranking with good matches and terminate early. For example, the number of verifications decreases between \xmark{1} and \xmark{2}.
+%
+\shinconeshort{} builds and traverses only the relevant parts of the lists and is therefore efficient for large documents. Also for \structuresearchshort{}, the number of verifications is independent of the document size, but in absolut numbers \shinconeshort{} verifies between two and three orders of magnitude fewer candidates. Further, the runtime of \structuresearchshort{} substantially increases with the document size. Overall, \shinconeshort{} is up to three orders of magnitude faster than \structuresearchshort{}.
+%
+Notably, \shinconeshort{} is beneficial for a single query even without precomputed index (cf.\ \textsc{Slim-NoIndex} in Figures~\ref{fig:tasm-struct-slim-timingfiltering-vary-document-size-k10-synthetic} and~\ref{fig:tasm-struct-slim-timingfiltering-vary-document-size-k10-realworld}).
+
+\begin{figure*}[ht!]
+  \centering
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig14_ab/timingfiltering-vary-document-size-k10}
+    \caption{Query time, \xmark.}
+    \label{fig:tasm-struct-slim-timingfiltering-vary-document-size-k10-synthetic}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig14_ab/verificationstotal-vary-document-size-k10}
+    \caption{Verifications, \xmark.}
+    \label{fig:tasm-struct-slim-verificationstotal-vary-document-size-k10-synthetic}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig14_cd/timingfiltering-vary-document-size-k10}
+    \caption{Query time, real world.}
+    \label{fig:tasm-struct-slim-timingfiltering-vary-document-size-k10-realworld}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig14_cd/verificationstotal-vary-document-size-k10}
+    \caption{Verifications, real world.}
+    \label{fig:tasm-struct-slim-verificationstotal-vary-document-size-k10-realworld}
+  \end{subfigure}
+  \caption{State of the art vs.\ \shinconeshort{}: Query time and number of verifications  over document size, k=10, |Q|=16.}
+  \label{fig:tasm-struct-slim-timingfiltering-verificationstotal-vary-document-size-k10}
+\end{figure*}
+
+\shinconeshort{} outperforms its competitors also when the query size increases (\figref{tasm-struct-slim-timingfiltering-verificationstotal-vary-query-size-k10}).
+%
+Note the small number of verifications in \figref{xmark-querysize-verifications}: for $\sizeOf{Q} = 8$, \shinconeshort{} verifies only $k$ candidates, which is optimal (only subtrees that appear in the final ranking are verified). This confirms the effectiveness of the score order and the clever list traversal in \shinconeshort{}. \structuresearchshort{} resp.\ \tasmpostordershort{} must verify at least two resp.\ three orders of magnitude more candidates (except for TB, $\sizeOf{Q} = 64$).
+%
+The runtime of \shinconeshort{} on \xmark{8} is always below $1s$ ($\sizeOf{Q} = 4$ and $\sizeOf{Q} = 8$: below $1ms$), whereas the best competitor, \structuresearchshort, runs for at least $1s$ and up to $8s$. The results on our real-world data sets lead to similar conclusions; only on \dblp{} \structuresearchshort{} is slightly faster.
+
+\begin{figure*}[ht!]
+  \centering
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig15_ab/timingfiltering-vary-query-size-k10}
+    \caption{Query time, \xmark{8}.}
+    \label{fig:xmark-querysize-time}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig15_ab/verificationstotal-vary-query-size-k10}
+    \caption{Verifications, \xmark{8}.}
+    \label{fig:xmark-querysize-verifications}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig15_cd/timingfiltering-vary-query-size-k10}
+    \caption{Query time, real world.}
+    \label{fig:tasm-struct-slim-timingfiltering-vary-query-size-k10-realworld}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig15_cd/verificationstotal-vary-query-size-k10}
+    \caption{Verifications, real world.}
+    \label{fig:tasm-struct-slim-verificationstotal-vary-query-size-k10-realworld}
+  \end{subfigure}
+  \caption{State of the art vs.\ \shinconeshort{}: Query time and number of verifications over query size |Q|, k=10.}
+  \label{fig:tasm-struct-slim-timingfiltering-verificationstotal-vary-query-size-k10}
+\end{figure*}
+
+In \figref{tasm-struct-slim-timingfiltering-verificationstotal-vary-k-q16}, we vary the result size $k$. All algorithms produce more candidates since the lower bound computed from the top-$k$ ranking is looser when $k$ is larger (and thus the subtree at position $k$ in the ranking is less similar to the query).
+%
+\shinconeshort{} benefits from the small candidate set for small values of $k$ and achieves runtimes between $0.1ms$ and $1s$ in the range $k = 1$ to $k = 100$. \structuresearchshort{} must verify many more candidates than \shincone{}. Although in \structuresearchshort{} the number of verifications for $k = 1$ is by orders of magnitude smaller than for $k = 100$, the runtime improves only marginally. \structuresearchshort{} retrieves many subtrees from the index that are filtered before they are verified; the number of retrieved subtrees does not depend on $k$ and may be much larger than the number of verifications.  \shinconeshort{} does not incur this overhead: candidates are processed partition by partition, and more promising partitions are processed first.
+%
+Except for \dblp{}, \shinconeshort{} outperforms \structuresearchshort{} on all $k$ values except $k = 10000$. For $k = 10000$, both algorithms must verify many subtrees. \structuresearchshort{} groups subtrees into equivalence classes of subtrees and verifies only one representative in each class, thus saving edit distance computations. This verification technique is orthogonal to the candidate generation and could also be adopted in \shinconeshort{}.
+
+\begin{figure*}[ht!]
+  \centering
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig16_ab/timingfiltering-vary-k-q16}
+    \caption{Query time, \xmark{8}.}
+    \label{fig:tasm-struct-slim-timingfiltering-vary-k-q16-synthetic}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig16_ab/verificationstotal-vary-k-q16}
+    \caption{Verifications, \xmark{8}.}
+    \label{fig:tasm-struct-slim-verificationstotal-vary-k-q16-synthetic}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig16_cd/timingfiltering-vary-k-q16}
+    \caption{Query time, real world.}
+    \label{fig:tasm-struct-slim-timingfiltering-vary-k-q16-realworld}
+  \end{subfigure}
+  \quad
+  \begin{subfigure}[b]{0.225\textwidth}
+    \centering
+    \includegraphics[height=\expplotheight{}]{figs/experiments/fig16_cd/verificationstotal-vary-k-q16}
+    \caption{Verifications, real world.}
+    \label{fig:tasm-struct-slim-verificationstotal-vary-k-q16-realworld}
+  \end{subfigure}
+  \caption{State of the art vs.\ \shinconeshort{}: Query time and number of verifications over varying result size k, |Q|=16.}
+  \label{fig:tasm-struct-slim-timingfiltering-verificationstotal-vary-k-q16}
+\end{figure*}

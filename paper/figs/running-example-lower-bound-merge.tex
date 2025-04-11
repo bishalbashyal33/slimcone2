@@ -1,0 +1,73 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+
+\usetikzlibrary{shapes, positioning, calc}
+
+\begin{document}
+
+{\scriptsize
+\begin{tikzpicture}
+  \newcommand\ptrdown{r}
+  \newcommand\ptrup{l}
+  \newcommand\ptrupdownlen{0.1}
+  \newcommand\listspacing{0.5}
+  \newcommand\listpartspacing{0.3}
+  \newcommand\arraypartspacing{0.015} % 0.03 for thick
+  \newcommand\listdir{right}
+  \newcommand\lbldir{below}
+
+  \tikzset{ilentry/.style={draw, minimum width=0.4675cm, minimum height=0.4675cm}}
+  \tikzset{processedilentry/.style={ilentry, fill opacity=0.25, text opacity=1}}
+  \tikzset{ilentrylb0/.style={processedilentry, fill=red}}
+  \tikzset{ilentrylb2/.style={processedilentry, fill=black!50!green}}
+  \tikzset{ilentrylb3/.style={processedilentry, fill=blue}}
+  \tikzset{ilentrylb5/.style={processedilentry, fill=magenta}}
+  %\tikzset{ilentrylb5/.style={processedilentry, fill=gray}}
+  \tikzset{ptr/.style={->, >=stealth}}
+
+  % inverted lists
+  \node[ilentry] at (0, 0) (il1) {$a$};
+  \foreach \label/\labelid [count=\prevlabelid from 1] in {b/2, b/3, x/4}{
+    \node[ilentry, \lbldir=\listspacing of il\prevlabelid] (il\labelid) {$\label$};
+  }
+
+  \node[ilentrylb3, \listdir=\listpartspacing of il1] (il1-1) {$1$};
+  \draw[ptr] (il1) -- (il1-1);
+  \foreach \poid/\idx/\style [count=\x from 1] in {2/2/ilentrylb2, 9/3/ilentrylb2, 6/4/ilentrylb0, 11/5/ilentrylb0, 7/6/ilentrylb3, 16/7/ilentrylb5, 17/8/ilentry}{
+    \node[\style, \listdir=-\arraypartspacing of il1-\x] (il1-\idx) {$\poid$};
+  }
+
+  \foreach \listid in {2, 3}{
+    \node[ilentrylb3, \listdir=\listpartspacing of il\listid] (il\listid-1) {$3$};
+    \draw[ptr] (il\listid) -- (il\listid-1);
+    \foreach \poid/\idx/\style [count=\x from 1] in {10/2/ilentrylb3, 13/3/ilentrylb3, 2/4/ilentrylb2, 5/5/ilentrylb2, 14/6/ilentrylb2, 6/7/ilentrylb0, 11/8/ilentrylb0, 15/9/ilentrylb0, 7/10/ilentrylb3, 16/11/ilentrylb5, 17/12/ilentry}{
+      \node[\style, \listdir=-\arraypartspacing of il\listid-\x] (il\listid-\idx) {$\poid$};
+    }
+  }
+
+  \node[ilentrylb3, \listdir=\listpartspacing of il4] (il4-1) {$4$};
+  \draw[ptr] (il4) -- (il4-1);
+  \foreach \poid/\idx/\style [count=\x from 1] in {8/2/ilentrylb3, 5/3/ilentrylb2, 9/4/ilentrylb2, 6/5/ilentrylb0, 11/6/ilentrylb0, 7/7/ilentrylb3, 16/8/ilentrylb5, 17/9/ilentry}{
+    \node[\style, \listdir=-\arraypartspacing of il4-\x] (il4-\idx) {$\poid$};
+  }
+
+  \node[left=3*\listspacing of il1.north] (legend-t) {$j$};
+  \node[ilentrylb0, \lbldir=\listpartspacing/2 of legend-t] (legend-b0) {$0$};
+  \foreach \b/\bi [count=\bip from 0] in {2/1, 3/2, 5/3}{
+    \node[ilentrylb\b, \lbldir=\listpartspacing/3 of legend-b\bip] (legend-b\bi) {$\b$};
+  }
+  \node[ilentry, \lbldir=\listpartspacing/3 of legend-b3] (legend-b4) {$13$};
+
+  % current
+  \foreach \listidx/\pup/\pdown in {1/2/6, 2/4/10, 3/4/10, 4/2/7}{
+    \draw[<-] (il\listidx-\pup.south) -- ++(0, -\ptrupdownlen) node[\lbldir] {\footnotesize$\ptrup$};
+    \draw[<-] (il\listidx-\pdown.south) -- ++(0, -\ptrupdownlen) node[\lbldir] {\footnotesize$\ptrdown$};
+  }
+\end{tikzpicture}}
+
+\end{document}

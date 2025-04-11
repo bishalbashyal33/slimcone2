@@ -1,0 +1,13 @@
+# Hashes of file build rules.
+674b74069ec817acd6b38d526a2cc426 include/CMakeFiles/expat
+563b7d84e9433f92b9d13be5029a86ce include/CMakeFiles/expat-complete
+cd4827593fc7b3d4aa95bdffd522a80a include/expat-prefix/src/expat-stamp/expat-build
+9bdb1b87c38f72ae027f1587d1bb8a53 include/expat-prefix/src/expat-stamp/expat-configure
+db4abaaca61ae20cfccf6ab4de47b346 include/expat-prefix/src/expat-stamp/expat-download
+68e988f43313365ccc3afe17c40a8452 include/expat-prefix/src/expat-stamp/expat-install
+e8adeb004adbe359c6fb9a43f80f22c4 include/expat-prefix/src/expat-stamp/expat-mkdir
+f127c574bae5676b787348b736d3c97e include/expat-prefix/src/expat-stamp/expat-patch
+bc92d7294f1f835d1bc17085e6160e36 include/expat-prefix/src/expat-stamp/expat-update
+76a4cd3ada80b249060ad4ba8a5b9cb3 src/CMakeFiles/check
+2628eba832d721d11bc081ec8baceb59 src/CMakeFiles/check-dynamic
+3945034e82c373785b7f3c72e14acfd6 src/CMakeFiles/check-static

@@ -1,0 +1,361 @@
+\subsection{Proofs}
+\label{sec:proofs}
+
+\lemmaearlytermination*
+
+\begin{proof}
+Due to the candidate score order and Def.~\ref{def:candidate-score}, $\TEDRshort{R'[k]}\leq \LLBshort{Q}{T^j}$ for all $j>m$; since $\LLBshort{Q}{T^j}\leq \TED{Q}{T^j}$, no subtrees $T^j$ can improve the ranking.
+\end{proof}
+
+\theoremmergeallecorrectnessscoreorder*
+
+\begin{proof}
+\emph{Correctness}: The stopping condition, $\sizeOf{R} = k \land j \geq \TEDRshort{R\at{k}}$, is correct since all subtrees $T_i$ in partitions that are not processed have size lower bound $\SLBshort{Q}{T_i} \geq j$  and can therefore not improve the ranking. \emph{Candidate score order}: We increment stripe number $j$, starting with $j = 0$.
+For a given $j$, we perform two steps: (1) We postpone the verification of subtrees $T_i \in S_j \cup S_{-j}$ for which $x = \LLBshort{Q}{T_i} > j$ and cache them in $lbc\at{x}$. (2) We verify (a) all subtrees $T_i \in S_j \cup S_{-j}$ for which $\LLBshort{Q}{T_i} = j$ \emph{and} (b) all subtrees $T_i \in lbc\at{j}$ (cached subtrees from previous stripes, $j' < j$).
+Thus, all subtrees $T_i$ of the stripes $j' < j$ with $\LLBshort{Q}{T_i} = j$ are verified when we process stripe $j$. There exists no subtree $T_i$ with $\LLBshort{Q}{T_i} = j$ in some stripe $S_{j''}$, $j'' > j$, since $\LLBshort{Q}{T_i} \geq \SLBshort{Q}{T_i} = j'' > j$ for all subtrees in $S_{j''}$.
+\end{proof}
+
+\theoremsizeinterval*
+
+\begin{proof}
+Recall that the number of missing labels in $T_i$ w.r.t.\ $Q$ is defined as $\lOf{T_i} = \sizeOf{\LabelMultiset{Q} \setminus \LabelMultiset{T_i}}$; $\lOf{T_i} \leq \BigB$ due to $\TED{Q}{T_i} \leq \BigB$. We prove the correctness of the size interval by contradiction.
+
+Case A: Assume a subtree $T_i$ with $\TED{Q}{T_i} \leq \BigB$ and $\sizeOf{T_i} \leq \sizeOf{Q} - \BigB - 1$. The minimum number of edit operations that transform any instance of $T_i$ to some instance of $Q$ consists of $\sizeOf{Q} - \sizeOf{T_i}$ insert operations.
+%
+Note that we can decrease $\lOf{T_i}$ \emph{and} the size difference $\sizeOf{Q} - \sizeOf{T_i}$ by inserting a new node with a label from $\LabelMultiset{Q} \setminus \LabelMultiset{T_i}$ into $T_i$. Thus, in the best case, we perform exactly $\sizeOf{Q} - \sizeOf{T_i}$ insertions, i.e., $\TED{Q}{T_i} = \sizeOf{Q} - \sizeOf{T_i}$.
+%
+Our assumption yields $\sizeOf{Q} - \sizeOf{T_i} \geq \BigB + 1$, hence $\TED{Q}{T_i} \geq \BigB + 1$, which contradicts our assumption.
+
+Case B: Assume a subtree $T_i$ with $\TED{Q}{T_i} \leq \BigB$ and $\sizeOf{T_i} \geq \sizeOf{Q} + \BigB - \lOf{T_i} + 1$. In this case, a delete operation can decrease the size difference $\sizeOf{T_i} - \sizeOf{Q}$ but cannot decrease $\lOf{T_i}$: to align the labels, we additionally need $\lOf{T_i}$ rename operations.
+%
+Hence, the minimum number of edit operations that transform any instance of $T_i$ to some instance of $Q$ consists of (1) $\lOf{T_i}$ rename and (2) $\sizeOf{T_i} - \sizeOf{Q}$ delete operations, i.e., $\TED{Q}{T_i} = \lOf{T_i} + \sizeOf{T_i} - \sizeOf{Q}$.
+%
+Our assumption implies that $\sizeOf{T_i} - \sizeOf{Q} \geq \BigB - \lOf{T_i} + 1$. Therefore, $\TED{Q}{T_i} \geq \lOf{T_i} + \BigB - \lOf{T_i} + 1 = \BigB + 1$, which contradicts our assumption.
+
+Since the edit distance is symmetric, we do not need to consider the transformations of $Q$ into $T_i$.
+\end{proof}
+
+\theoremconeecorrectnessscoreorder*
+
+\begin{proof}
+\emph{Correctness}: The stopping condition, $\sizeOf{R} = k \land \BigB \geq \TEDRshort{R\at{k}}$, holds since all subtrees $T_i$ in unprocessed partitions have size $\sizeOf{T_i} \not\in \siOf{\BigB, Q, T_i}$ and therefore $\TED{Q}{T_i} > \BigB$ (cf. Theorem~\ref{th:size-interval}). Hence, these subtrees do not improve the ranking.
+%
+If \cone{} does not produce enough candidates from lists that share a label with $Q$, we fall back to \lowerboundmerge{} on all remaining lists to derive a correct ranking.
+%
+\emph{Candidate score order}: We increment the edit bound $\BigB$, starting with $\BigB = 0$. For a given list $x$ (starting with $0$), we process all unprocessed partitions that contain subtrees in the size range $\siOf{\BigB, Q, T_i}$. Let $P_\BigB$ denote the set of all subtrees $T_i$ in these new partitions of the lists $x \leq \BigB$ that we have not seen before.
+
+Similar to \lowerboundmerge{}, we perform two steps for a given $\BigB$: (1) We postpone the verification of subtrees $T_i \in P_\BigB$ for which $x = \LLBshort{Q}{T_i} > \BigB$ and cache them in $lbc\at{x}$. (2) We verify (a) all subtrees $T_i \in P_\BigB$ for which $\LLBshort{Q}{T_i} = \BigB$ and (b) all subtrees $T_i \in lbc\at{\BigB}$ (cached from previous sets $P_{\BigB'}$, $\BigB' < \BigB$).
+%
+Hence, all subtrees $T_i$ of the sets $P_{\BigB'}$, $\BigB' < \BigB$, with $\LLBshort{Q}{T_i} = \BigB$ are verified when we process set $P_\BigB$.
+%
+There is no subtree $T_i$ with $\LLBshort{Q}{T_i} \leq \BigB$ in some set $P_{\BigB''}$, $\BigB'' > \BigB$, i.e. $\LLBshort{Q}{T_i} \leq \BigB \implies \sizeOf{T_i} \in \siOf{\BigB, Q, T_i}$.
+%
+Analogous to the proof of Theorem~\ref{th:size-interval}, we show this by contradiction. Recall that $\LLBshort{Q}{T_i} = \LLB{Q}{T_i}$.
+
+Case A: Assume a subtree $T_i$ with $\LLBshort{Q}{T_i} \leq \BigB$ and $\sizeOf{T_i} \leq \sizeOf{Q} - \BigB - 1$.
+%
+Then, $\Max{\sizeOf{Q}, \sizeOf{T_i}} = \sizeOf{Q}$ implies that $\LLBshort{Q}{T_i} = \sizeOf{Q} - \MultisetOverlapSize{Q}{T_i}$.
+%
+Our assumption yields $\sizeOf{\LabelMultiset{T_i}} \leq \sizeOf{Q} - \BigB - 1$, and $\sizeOf{\LabelMultiset{Q}} = \sizeOf{Q}$.
+%
+Hence, $\MultisetOverlapSize{Q}{T_i} \leq \sizeOf{Q} - \BigB - 1$ and therefore $\LLBshort{Q}{T_i} \geq \BigB + 1$, which contradicts our assumption.
+
+Case B: Assume a subtree $T_i$ with $\LLBshort{Q}{T_i} \leq \BigB$ and $\sizeOf{T_i} \geq \sizeOf{Q} + \BigB - \lOf{T_i} + 1$.
+%
+Since $\lOf{T_i} \leq \BigB$, $\Max{\sizeOf{Q}, \sizeOf{T_i}} = \sizeOf{T_i} \implies \LLBshort{Q}{T_i} = \sizeOf{T_i} - \MultisetOverlapSize{Q}{T_i}$.
+%
+Since $\lOf{T_i}$ labels of $Q$ are not in $T_i$, $\MultisetOverlapSize{Q}{T_i} = \sizeOf{Q} - \lOf{T_i}$ and therefore $\LLBshort{Q}{T_i} = \sizeOf{T_i} - \left( \sizeOf{Q} - \lOf{T_i} \right) = \sizeOf{T_i} - \sizeOf{Q} + \lOf{T_i}$.
+%
+Our assumption yields $\sizeOf{T_i} - \sizeOf{Q} \geq \BigB - \lOf{T_i} + 1$, hence $\LLBshort{Q}{T_i} \geq \BigB + 1$, which contradicts our assumption.
+
+In the fallback case, \lowerboundmerge{} guarantees score order.
+\end{proof}
+
+\theoremslimconecorrectnessscoreorder*
+
+\begin{proof}
+\emph{Correctness} and \emph{candidate score order} follow directly from Theorem~\ref{th:cone-correctness-score-order} if we prove that \shincone{}'s partition traversal is identical to the partition traversal of \cone{}. Note that an identical partition traversal is sufficient, i.e., subtrees within the partitions need not be traversed in the same order. \emph{Identical partition traversal}:
+%
+\shincone{}'s list ordering is identical to the list ordering of \cone{} (cf. \secref{a-memory-efficient-approach}), hence lists (i.e., labels) are processed in the same order. We distinguish (1) uninitialized and (2) initialized lists:
+%
+(1) Uninitialized lists: For each list entry $i$ (rooting a subtree $T_i$) s.t.\ $\sizeOf{T_i} < \sizeOf{Q}$, the path in $T$ is traversed upwards until $i' \neq i$ and $\sizeOf{T_{i'}} \geq \sizeOf{Q}$ holds. All traversed nodes (excl. $i'$) are cached in the path cache $pc$.
+%
+For $T_{i'}$, there are two cases: (a) $\sizeOf{T_{i'}} > \sizeOf{Q}$: $i'$ is stored in the path ends $pe$. (b) $\sizeOf{T_{i'}} = \sizeOf{Q}$: $\LLBshort{Q}{T_{i'}}$ is computed. If $\LLBshort{Q}{T_{i'}} = \BigB$, $T_{i'}$ is verified.
+%
+Otherwise, we postpone the verification of $T_{i'}$ to round $\BigB'$.
+%
+(2) Initialized lists: For a given list we process (a) all list entries $i$ s.t.\ $\sizeOf{Q} + \BigB - \lOf{T_i} \geq \sizeOf{T_i} > \sizeOf{Q}$, (b) all entries in the path cache $pc$, and (c) all entries in the path ends $pe$.
+%
+Due to (b) we process all subtrees $T_i$ smaller than $Q$, $\sizeOf{Q} > T_i \geq \sizeOf{Q} - \BigB$; due to (c) we process all subtrees $T_i$ larger than $Q$, $\sizeOf{Q} + \BigB - \lOf{T_i} \geq T_i > \sizeOf{Q}$.
+
+(2) and (3) guarantee that (i) \shincone{}'s partition traversal is identical to the partition traversal of \cone{} \emph{and} (ii) \emph{all} subtrees of a partition are generated.
+\end{proof}
+
+\subsection{Pseudo Codes}
+\label{sec:pseudo-codes}
+
+We provide the pseudo code for all our algorithms: \lowerboundmerge{} (\algoref{lowerboundmergetopk}), \cone{} (\algoref{conetopk}), and \shincone{} (\algoref{shinconetopk}). The other algorithms presented in this section are auxiliary functions used in the main algorithms.
+
+\begin{algorithm}[ht!]
+  \KwIn{query tree $Q$, document tree $T$, result size $k$}
+  \KwResult{top-$k$ ranking $R$ of subtrees of $T$ w.r.t.\ $Q$}
+
+  \tcp{$\Index$\,.\!.\!.\,candidate index, $\LabelMultiset{Q}$\,.\!.\!.\,label multiset of $Q$}
+
+  \tcp{$T_i$\,.\!.\!.\,subtree rooted at node $i$}
+  \ForEach(\tcp*[h]{initialize inverted lists}){$\lambda \in \LabelMultiset{Q}$}{
+    $l_\lambda \gets \Indexlist{\lambda}$; \tcp{retrieve list $l_\lambda$}
+    \If(\tcp*[h]{initialize pointers $l_\lambda.\ptrdown{}$,\,$l_\lambda.\ptrup{}$}){$l_\lambda \not\eq$ nil}{
+      $l_\lambda.\ptrdown \gets$ pos. of $i$ s.t.\ $\SLB{Q}{T_i}$ is minimal\;
+      $l_\lambda.\ptrup \gets l_\lambda.\ptrdown - 1$
+    }
+  }
+
+  $ol \gets$ empty associative array; \tcp{overlap store}
+  $lbc \gets$ empty dynamic array; \tcp{lower bound cache}
+
+  $j \gets 0$; \tcp{current stripe number}
+  $R \gets$ empty ranking\;
+
+  \While(\tcp*[h]{$j > 2\sizeOf{Q}$: we must consider all lists}){$j \leq 2\sizeOf{Q}$}{
+    \lIf(\tcp*[h]{evaluate $lbc\at{j}$}){$\roundPrologue{j}$}{\KwRet{$R$}}
+
+    \ForEach(\tcp*[h]{compute overlaps}){node $i \in S_j \cup S_{-j}$}{
+      $ol\at{i} \gets$ \# of lists $l_\lambda$ s.t.\ $i \in l_\lambda$\;
+      advance $l_\lambda.\ptrdown$ and $l_\lambda.\ptrup$\;
+    }
+
+    \ForEach(\tcp*[h]{process subtrees (cache or verify)}){key $i \in ol$}{
+    $lb \gets \Max{\sizeOf{Q}, \sizeOf{T_i}} - ol\at{i}$\;
+      \lIf{$\evaluateSubtree{T_i, lb, j}$}{\KwRet{$R$}}
+    }
+
+    $j \gets j + 1$; \tcp{proceed to next $j' > j$}
+
+    \tcp{check if we can terminate before continuing}
+    \lIf{$\sizeOf{R} = k \land j \geq \TEDRshort{R\at{k}}$}{\KwRet{$R$}}
+  }
+
+  \KwRet{$R$};
+
+  \caption{$\lowerboundmerge{}\left(Q, T, k\right)$}
+  \label{algo:lowerboundmergetopk}
+\end{algorithm}
+
+\begin{algorithm}
+  \KwIn{subtree $T_i$, lower bound $lb$, edit distance bound $\BigB \leq lb$}
+  \KwResult{true if final ranking found, false otherwise}
+
+  \tcp{$lbc$,\,$R$,\,$Q$ globally accessible}
+
+  \If(\tcp*[h]{cache $T_i$}){$lb > \BigB$}{
+    $lbc\at{lb} \gets lbc\at{lb} \cup \Set{T_i}$\;
+    \KwRet{false}; \tcp{we cannot terminate}
+  }
+
+  compute $\TED{T_i}{Q}$ and update $R$ with $T_i$; \tcp{$lb = \BigB$; verify $T_i$}
+  \KwRet{$\sizeOf{R} = k \land \BigB \geq \TEDRshort{R\at{k}}$}; \tcp{indicates if we can terminate}
+
+  \caption{$\evaluateSubtree{T_i, lb, \BigB}$}
+  \label{func:evaluateSubtree}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \KwIn{edit distance bound $\BigB$}
+  \KwResult{true if final ranking found, false otherwise}
+
+  \tcp{$lbc$,\,$R$,\,$Q$ globally accessible}
+
+  \ForEach(\tcp*[h]{verify all subtrees in $lbc\at{\BigB}$}){$T_i \in lbc\at{\BigB}$}{
+    compute $\TED{T_i}{Q}$ and update $R$ with $T_i$\;
+    \tcp{return as soon as we can terminate}
+    \lIf{$\sizeOf{R} = k \land \BigB \geq \TEDRshort{R\at{k}}$}{\KwRet{true}}
+  }
+
+  \KwRet{false}; \tcp{we cannot terminate}
+
+  \caption{$\roundPrologue{\BigB}$}
+  \label{func:roundprologue}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \KwIn{query tree $Q$, document tree $T$, result size $k$}
+  \KwResult{top-$k$ ranking $R$ of subtrees of $T$ w.r.t.\ $Q$}
+
+  $L \gets$ deduplicated $\LabelMultiset{Q}$\;
+  sort $L$ by increasing list length $\sizeOf{l_\lambda}$, $\lambda \in L$\;
+
+  $lbc \gets$ empty dynamic array; \tcp{lower bound cache}
+  $\BigB \gets 0$; \tcp{current edit distance bound}
+  $R \gets$ empty ranking\;
+
+  \While(\tcp*[h]{$\BigB > 2\sizeOf{Q}$: use \lowerboundmerge{} on all lists}){$\BigB \leq 2\sizeOf{Q}$}{
+    \lIf(\tcp*[h]{evaluate $lbc\at{\BigB}$}){$\roundPrologue{\BigB}$}{\KwRet{$R$}}
+
+    \ForEach(\tcp*[h]{process initialized lists first}){init. list $l_\lambda$}{
+      \lIf{$\processList{l_\lambda, \BigB}$}{\KwRet{$R$}}
+    }
+
+    \If(\tcp*[h]{initialize next list}){$\BigB \leq \sizeOf{L}$}{
+      $l_\lambda \gets \Indexlist{L\at{\BigB}}$; \tcp{retrieve next list}
+
+      \tcp{process list $l_\lambda$; $T_i$\,.\!.\!.\,subtree rooted at node $i$}
+      \If(\tcp*[h]{initialize pointers $l_\lambda.\ptrdown{}$,\,$l_\lambda.\ptrup{}$}){$l_\lambda \not\eq$ nil}{
+        $l_\lambda.\ptrdown \gets$ pos. of $i$ s.t.\ $\SLB{Q}{T_i}$ is minimal\;
+        $l_\lambda.\ptrup \gets l_\lambda.\ptrdown - 1$\;
+        \lIf{$\processList{l_\lambda, \BigB}$}{\KwRet{$R$}}
+      }
+    }
+
+    $\BigB \gets \BigB + 1$; \tcp{proceed to next $\BigB' > \BigB$}
+
+    \tcp{check if we can terminate before continuing}
+    \lIf{$\sizeOf{R} = k \land \BigB \geq \TEDRshort{R\at{k}}$}{\KwRet{$R$}}
+  }
+
+  \KwRet{$R$}\;
+
+  \caption{$\cone{}\left(Q, T, k\right)$}
+  \label{algo:conetopk}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \KwIn{inverted list $l_\lambda$, edit distance bound $\BigB$}
+  \KwResult{true if final ranking found, false otherwise}
+
+  \tcp{$Q$ globally accessible; $T_i$\,.\!.\!.\,subtree rooted at node $i$}
+
+  $minsize \gets \sizeOf{Q} - \BigB$; \tcp{min. subtree size to consider}
+  $maxsize \gets \sizeOf{Q} + \BigB - \indexOf{l_\lambda}$; \tcp{max. subtree size to consider}
+
+  \ForEach{unseen node $i \in l_\lambda$ s.t.\ $maxsize \geq \sizeOf{T_i} \geq minsize$}{
+    \tcp{process $T_i$ and return as soon as we can terminate}
+    \lIf{$\evaluateSubtree{T_i, \LLBshort{T_i}{Q}, \BigB}$}{\KwRet{true}}
+    advance $l_\lambda.\ptrdown{}$ and $l_\lambda.\ptrup{}$\;
+  }
+
+  \KwRet{false}; \tcp{we cannot terminate}
+
+  \caption{$\processList{l_\lambda, \BigB}$}
+  \label{algo:procList}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \KwIn{query tree $Q$, document tree $T$, result size $k$}
+  \KwResult{top-$k$ ranking $R$ of subtrees of $T$ w.r.t.\ $Q$}
+
+  $L \gets$ deduplicated $\LabelMultiset{Q}$\;
+sort $L$ by increasing \emph{full} list length $\sizeOf{l_\lambda}$, $\lambda \in L$\;
+
+  \tcp{lower bound cache $lbc$, path cache $pc$, path ends $pe$, and}
+  \tcp{positions in slim lists $next$}
+  $lbc, pc, pe, next \gets$ empty dynamic arrays\;
+  $\BigB \gets 0$; \tcp{current edit distance bound}
+  $R \gets$ empty ranking\;
+
+  \While(\tcp*[h]{$\BigB > 2\sizeOf{Q}$: use \lowerboundmerge{} on all lists}){$\BigB \leq 2\sizeOf{Q}$}{
+    \lIf(\tcp*[h]{evaluate $lbc\at{\BigB}$}){$\roundPrologue{\BigB}$}{\KwRet{$R$}}
+
+    \ForEach(\tcp*[h]{process initialized lists first}){init. list $l_\lambda$}{
+      \lIf{$\processSmallerSubtrees{l_\lambda, \BigB}$}{\KwRet{R}} \lIf{$\processLargerSubtrees{l_\lambda, \BigB}$}{\KwRet{R}}
+    }
+
+    \If(\tcp*[h]{initialize next list}){$\BigB \leq \sizeOf{L}$}{
+      $l_\lambda \gets \Indexlist{L\at{\BigB}}$; \tcp{retrieve next list}
+
+      \If{$l_\lambda \not\eq$ nil}{
+        \tcp{initialize $l_\lambda$ buckets in $pc$ and $pe$}
+        $pc\at{l_\lambda}, pe\at{l_\lambda} \gets$ empty dynamic Arrays\;
+        $next\at{l_\lambda} \gets 0$; \tcp{initialize $next$ pointer for $l_\lambda$}
+
+        \ForEach{unseen node $i \in l_\lambda$ s.t.\ $\sizeOf{T_i} < \sizeOf{Q}$}{
+          \tcp{climb up path; $T_q$\,.\!.\!.\,subtree rooted at $q$}
+          traverse up to first node $q$ s.t.\ $\sizeOf{T_q} \geq \sizeOf{Q}$\;
+
+          \tcp{add all traversed nodes to path cache}
+          \ForEach{traversed node $x$ (excl. $q$)}{
+            $pc\at{l_\lambda}\at{\sizeOf{T_x}} \gets pc\at{l_\lambda}\at{\sizeOf{T_x}} \cup \Set{x}$\;
+          }
+
+          \tcp{process $T_q$ if size fits $\sizeOf{Q}$}
+          \If{$q$ unseen $\land \sizeOf{T_q} = \sizeOf{Q}$}{
+            $lb \gets \LLBshort{T_q}{Q}$\;
+            \If{$\evaluateSubtree{T_q, lb, \BigB}$}{\KwRet{$R$};}
+            $q \gets \parentOf{q}$; \tcp{traverse to parent of $q$}
+          }
+          $pe\at{l_\lambda} \gets pe\at{l_\lambda} \cup \Set{q}$; \tcp{add $q$ to path ends}
+          $next\at{l_\lambda} \gets$ pos. of $i$ in $l_\lambda$; \tcp{next $l_\lambda$-entry}
+        }
+
+        \lIf{$\processSmallerSubtrees{l_\lambda, \BigB}$}{\KwRet{$R$}} \lIf{$\processLargerSubtrees{l_\lambda, \BigB}$}{\KwRet{$R$}}
+      }
+    }
+
+    $\BigB \gets \BigB + 1$; \tcp{proceed to next $\BigB' > \BigB$}
+    \tcp{check if we can terminate before continuing}
+    \lIf{$\sizeOf{R} = k \land \BigB \geq \TEDRshort{R[k]}$}{\KwRet{$R$}}
+  }
+
+  \KwRet{$R$}
+
+  \caption{$\shincone{}\left(Q, T, k\right)$}
+  \label{algo:shinconetopk}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \KwIn{inverted list $l_\lambda$, edit distance bound $\BigB$}
+  \KwResult{true if final ranking found, false otherwise}
+
+  \tcp{$pc$,\,$Q$ globally accessible}
+
+  $minsize \gets \sizeOf{Q} - \BigB$; \tcp{min. subtree size to consider}
+  \tcp{process all path cache buckets that fit w.r.t.\ size}
+  $s \gets \sizeOf{Q} - 1$\;
+  \While{$s \geq minsize$}{
+    $b \gets pc\at{l_\lambda}\at{s}$; \tcp{get path cache bucket}
+
+    \tcp{process all subtrees; $T_q$\,.\!.\!.\,subtree rooted at node $q$}
+    \ForEach{unseen node $q \in b$}{
+      \tcp{process $T_q$ and return as soon as we can terminate}
+      \If{$\evaluateSubtree{T_q, \LLBshort{T_q}{Q}, \BigB}$}{\KwRet{true};}
+    }
+
+    $s \gets s - 1$; \tcp{proceed to next subtree size}
+  }
+
+  \KwRet{false}; \tcp{we cannot terminate}
+
+  \caption{$\processSmallerSubtrees{l_\lambda, \BigB}$}
+  \label{algo:processSmallerSubtrees}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \KwIn{inverted list $l_\lambda$, edit distance bound $\BigB$}
+  \KwResult{true if final ranking found, false otherwise}
+
+  \tcp{$next$,\,$pe$,\,$Q$ globally accessible}
+
+  $maxsize \gets \sizeOf{Q} + \BigB - \indexOf{l_\lambda}$; \tcp{max. subtree size to consider}
+
+  \tcp{add fitting list entries to path ends bucket}
+  \While{$T_n \gets$ subtree rooted at $next\at{l_\lambda} \land \sizeOf{T_n} \leq maxsize$}{
+    $pe\at{l_\lambda} \gets pe\at{l_\lambda} \cup \Set{next\at{l_\lambda}}$\;
+    advance $next\at{l_\lambda}$\;
+  }
+
+  \ForEach(\tcp*[h]{process path ends bucket}){unseen node $q \in pe\at{l_\lambda}$}{
+    \If(\tcp*[h]{$T_q$\,.\!.\!.\,subtree rooted at node $q$}){$\sizeOf{T_q} \leq maxsize$}{
+    \tcp{process $T_q$ and return as soon as we can terminate}
+      \If{$\evaluateSubtree{T_q, \LLBshort{T_q}{Q}, \BigB}$}{
+        \KwRet{true};
+      }
+
+      $q \gets \parentOf{q}$; \tcp{traverse to parent}
+    }
+  }
+
+  \KwRet{false}; \tcp{we cannot terminate}
+
+  \caption{$\processLargerSubtrees{l_\lambda, \BigB}$}
+  \label{algo:processLargerSubtrees}
+\end{algorithm}

@@ -1,0 +1,36 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[libertine]{newtxmath}
+
+\usetikzlibrary{shapes, positioning, calc}
+
+\begin{document}
+
+{\scriptsize
+\begin{tikzpicture}
+  \newcommand\arraypartspacing{0.015} % 0.03 for thick
+  \newcommand\listelemminwidth{0.4675cm }
+  \newcommand\listelemminheight{0.4675cm}
+
+  \node[minimum width=\listelemminwidth, minimum height=\listelemminheight] at (0, 0) (ni1) {$1$};
+  \node[draw, minimum width=\listelemminwidth, minimum height=\listelemminheight, below=-\arraypartspacing of ni1] (ni1-1) {$a$};
+  \node[draw, minimum width=\listelemminwidth, minimum height=\listelemminheight, below=-\arraypartspacing of ni1-1] (ni1-2) {$1$};
+  \node[draw, minimum width=\listelemminwidth, minimum height=\listelemminheight, below=-\arraypartspacing of ni1-2] (ni1-3) {$2$};
+
+  \node[left=-0.1 of ni1-1] {$lbl$};
+  \node[left=-0.1 of ni1-2] {$size$};
+  \node[left=-0.1 of ni1-3] {$par$};
+
+  \foreach \label/\size/\parent [count=\prevpoid from 1, evaluate=\prevpoid as \poid using int(\prevpoid+1)] in {b/2/7, b/1/6, x/1/5, b/2/6, a/4/7, d/7/17, x/1/9, a/2/11, b/1/11, b/4/16, z/1/15, b/1/14, y/2/15, w/4/16, d/9/17, o/17/0}{
+    \node[minimum width=\listelemminwidth, minimum height=\listelemminheight, right=-\arraypartspacing of ni\prevpoid] (ni\poid) {$\poid$};
+    \node[draw, minimum width=\listelemminwidth, minimum height=\listelemminheight, below=-\arraypartspacing of ni\poid] (ni\poid-1) {$\label$};
+    \node[draw, minimum width=\listelemminwidth, minimum height=\listelemminheight, below=-\arraypartspacing of ni\poid-1] (ni\poid-2) {$\size$};
+    \node[draw, minimum width=\listelemminwidth, minimum height=\listelemminheight, below=-\arraypartspacing of ni\poid-2] (ni\poid-3) {$\parent$};
+  }
+\end{tikzpicture}}
+
+\end{document}

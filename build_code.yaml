@@ -1,0 +1,71 @@
+# The MIT License (MIT)
+# Copyright (c) 2019 Daniel Kocher, Manuel Kocher
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+################################################################################
+################################# Description ##################################
+################################################################################
+#
+# IMPORTANT: This is not a standalone Ansible script.
+# Builds a C++ source code using CMake/Make and takes three variables:
+#
+# build_dir directory path s.t. the CMakeLists.txt is in relative path ".."
+#
+# cmake_flags flags that are passed to the CMake call, for example,
+#             '-D CMAKE_CXX_FLAGS=\"-DNO_LOG\"'
+#
+# what  descriptive string that is appended to "Build code for " and
+#       "Compile code for ", respectively
+#
+################################################################################
+
+---
+  - name: "Check if directory {{ build_dir }} exists"
+    stat:
+      path: "{{ build_dir }}"
+    register: code_build
+  - name: "Create directory {{ build_dir }}"
+    file:
+      path: "{{ build_dir }}"
+      state: directory
+    when: not(code_build.stat.exists and code_build.stat.isdir)
+
+  - name: "Build code for {{ what }} (CMake)"
+    environment:
+      CXX: "/usr/bin/clang"
+    command: cmake {{ cmake_flags | default('') }} ..
+    args:
+      chdir: "{{ build_dir }}"
+    register: code_cmake
+  - name: "CMake stdout"
+    debug:
+      var: code_cmake.stdout
+  - name: "CMake stderr"
+    debug:
+      var: code_cmake.stderr
+
+  - name: "Compile code for {{ what }} (Make)"
+    make:
+      chdir: "{{ build_dir }}"
+      target: all
+    register: code_make
+  - name: "Make stdout"
+    debug:
+      var: code_make.stdout_lines

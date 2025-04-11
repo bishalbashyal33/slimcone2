@@ -1,0 +1,150 @@
+\documentclass[sigconf, 10pt]{acmart}
+
+%\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{balance}  % for  \balance command ON LAST PAGE  (only there!)
+\usepackage{amsmath}
+\usepackage[vlined, linesnumbered, ruled]{algorithm2e}
+\usepackage{subcaption}
+%\usepackage{float}
+\usepackage{import}
+%\usepackage{colortbl}
+%\usepackage{framed}
+%\usepackage{etoolbox}
+\usepackage{thmtools,thm-restate}
+\usepackage{appendix}
+
+\AtBeginEnvironment{algorithm}{\linespread{0.9}\small\selectfont}
+\newcommand\smallbluecomment[1]{\scriptsize\ttfamily\textcolor{blue}{#1}}
+\SetCommentSty{smallbluecomment}
+
+% own commands, environments, et cetera
+\subimport{./}{commands.tex}%
+% set paths for figures
+\graphicspath{figs/}%
+\captionsetup{justification=centering}
+
+\newcommand\theauthors{
+\author{Daniel Kocher}
+\affiliation{%
+  \institution{University of Salzburg}
+  \streetaddress{Jakob-Haringer-Strasse 2}
+  \city{Salzburg}
+  \state{Austria}
+  \postcode{5020}
+}
+\email{dkocher@cs.sbg.ac.at}
+
+\author{Nikolaus Augsten}
+\affiliation{%
+  \institution{University of Salzburg}
+  \streetaddress{Jakob-Haringer-Strasse 2}
+  \city{Salzburg}
+  \state{Austria}
+  \postcode{5020}
+}
+\email{Nikolaus.Augsten@sbg.ac.at}
+}
+
+% uncomment for a camera-ready version
+%\renewcommand{\forrevision}[2]{#1}
+%\renewcommand{\todo}[1]{}
+%\renewcommand{\todoin}[2][]{}
+
+\copyrightyear{2019}
+\acmYear{2019}
+\setcopyright{rightsretained}
+\acmConference[SIGMOD '19]{2019 International Conference on Management of Data}{June 30-July 5, 2019}{Amsterdam, Netherlands}
+\acmBooktitle{2019 International Conference on Management of Data (SIGMOD '19), June 30-July 5, 2019, Amsterdam, Netherlands}
+\acmDOI{10.1145/3299869.3319892}
+\acmISBN{978-1-4503-5643-5/19/06}
+
+\settopmatter{printacmref=true}
+\fancyhead{}
+
+\title{A Scalable Index for Top-k Subtree Similarity Queries}
+
+\theauthors
+
+\begin{abstract}
+Given a query tree $Q$, the \emph{top-$k$ subtree similarity query} retrieves the $k$ subtrees in a large document tree $T$ that are closest to $Q$ in terms of tree edit distance. The classical solution scans the entire document, which is slow. The state-of-the-art approach precomputes an index to reduce the query time. However, the index is large (quadratic in the document size), building the index is expensive, updates are not supported, and data-specific tuning is required.
+
+We present a scalable solution for the top-$k$ subtree similarity problem that does not assume specific data types, nor does it require any tuning. The key idea is to process promising subtrees first. A subtree is promising if it shares many labels with the query. We develop a new technique based on inverted lists that efficiently retrieves subtrees in the required order and supports incremental updates of the document. To achieve linear space, we avoid full list materialization but build relevant parts of a list on the fly.
+
+In an extensive empirical evaluation on synthetic and real-world data, our technique consistently outperforms the state-of-the-art index w.r.t.\ memory usage, indexing time, and the number of candidates that must be verified. In terms of query time, we clearly outperform the state of the art and achieve runtime improvements of up to four orders of magnitude.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+  <concept>
+    <concept_id>10002951.10003317.10003338.10003346</concept_id>
+    <concept_desc>Information systems~Top-k retrieval in databases</concept_desc>
+    <concept_significance>500</concept_significance>
+  </concept>
+</ccs2012>
+\end{CCSXML}
+
+%\ccsdesc[500]{Information systems~Top-k retrieval in databases}
+%\ccsdesc[100]{Information systems~Similarity measures}
+
+%\keywords{top-k subtree similarity; tree indexing; tree edit distance}
+
+\begin{document}
+%
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+\subimport{./}{introduction.tex}
+%
+\section{Notation, Background, and Problem Statement}
+\label{sec:background-notations}
+\subimport{./}{background-notations.tex}
+%
+\section{Effective Candidate Generation}
+\label{sec:principal-idea}
+\subimport{./}{principal-idea.tex}
+%
+\section{Index and \lowerboundmerge{} Algorithm}
+\label{sec:baseline}
+\subimport{./}{merge.tex}
+%
+\section{\cone{}: Partition-Based Traversal}
+\label{sec:cone}
+\subimport{./}{cone.tex}
+%
+\section{Linear Space Index and SlimCone}
+\label{sec:a-memory-efficient-approach}
+\subimport{./}{a-memory-efficient-approach.tex}
+
+\section{Efficient Index Updates}
+\label{sec:efficient-index-updates}
+\subimport{./}{efficient-index-updates.tex}
+
+\section{Related Work}
+\label{sec:related-work}
+\subimport{./}{related-work.tex}
+
+\section{Empirical Evaluation}
+\label{sec:empirical-evaluation}
+\subimport{./}{empirical-evaluation.tex}
+
+\section{Conclusion}
+\label{sec:conclusion-future-work}
+\subimport{./}{conclusion-future-work.tex}
+
+\begin{acks}
+We thank the anonymous reviewers for their constructive comments and Mateusz Pawlik, Thomas H{\"u}tter, and Willi Mann for valuable discussions. This work was supported by Austrian Science Fund (FWF): P 29859.
+\end{acks}
+
+\bibliographystyle{abbrv}
+\bibliography{bibliography-all}
+
+\begin{appendices}
+\section{Appendix}
+\label{sec:appendix}
+\subimport{./}{appendix.tex}
+\clearpage % important for all algorithms to appear
+\end{appendices}
+
+\end{document}

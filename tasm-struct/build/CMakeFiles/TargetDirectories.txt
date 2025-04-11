@@ -1,0 +1,13 @@
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/CMakeFiles/edit_cache.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/CMakeFiles/rebuild_cache.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/include/CMakeFiles/expat.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/include/CMakeFiles/edit_cache.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/include/CMakeFiles/rebuild_cache.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/tasm-struct-dep.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/tasm-struct.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/execute.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/check-dynamic.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/check-static.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/check.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/edit_cache.dir
+/home/azureuser/kocher-sigmod2019-reproducibility/tasm-struct/build/src/CMakeFiles/rebuild_cache.dir
